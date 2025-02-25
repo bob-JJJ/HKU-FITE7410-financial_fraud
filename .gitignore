@@ -1,0 +1,18 @@
+# R程序缓存文件
+.RData
+.Rhistory
+.Rproj.user/
+*.Rproj
+**/.RData
+**/.Rhistory
+**/.Rproj.user/
+
+# Word文档
+*.docx
+**/*.docx
+
+# Python缓存
+__pycache__/
+**/__pycache__/
+*.py[cod]
+**/*.py[cod]
