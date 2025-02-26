@@ -1,0 +1,100 @@
+
+> summary(data)
+ TransactionID        isFraud       TransactionDT      TransactionDT..Hour. TransactionAmt      ProductCD             addr1           addr2       
+ Min.   :2987004   Min.   :0.0000   Min.   :   86506   Min.   :  24         Min.   :   0.272   Length:100000      Min.   : 82.0   Min.   : 18.00  
+ 1st Qu.:3078716   1st Qu.:0.0000   1st Qu.: 1900286   1st Qu.: 527         1st Qu.:  25.419   Class :character   1st Qu.:186.0   1st Qu.: 73.00  
+ Median :3203512   Median :0.0000   Median : 5031202   Median :1397         Median :  50.000   Mode  :character   Median :281.0   Median : 73.00  
+ Mean   :3238037   Mean   :0.1132   Mean   : 6209720   Mean   :1724         Mean   :  83.657                      Mean   :278.6   Mean   : 73.01  
+ 3rd Qu.:3393812   3rd Qu.:0.0000   3rd Qu.:10272711   3rd Qu.:2853         3rd Qu.: 100.000                      3rd Qu.:312.0   3rd Qu.: 73.00  
+ Max.   :3577534   Max.   :1.0000   Max.   :15811030   Max.   :4391         Max.   :1800.000                      Max.   :522.0   Max.   :110.00  
+                                                                                                                  NA's   :42881   NA's   :42881   
+  dist1             dist2             card1           card2           card3          card4               card5          card6           P_emaildomain     
+ Mode:logical   Min.   :    0.0   Min.   : 1000   Min.   :100.0   Min.   :100.0   Length:100000      Min.   :100.0   Length:100000      Length:100000     
+ NA's:100000    1st Qu.:    7.0   1st Qu.: 5666   1st Qu.:264.0   1st Qu.:150.0   Class :character   1st Qu.:138.0   Class :character   Class :character  
+                Median :   38.0   Median : 9633   Median :408.0   Median :150.0   Mode  :character   Median :224.0   Mode  :character   Mode  :character  
+                Mean   :  230.5   Mean   : 9849   Mean   :389.7   Mean   :162.1                      Mean   :190.7                                        
+                3rd Qu.:  207.0   3rd Qu.:15063   3rd Qu.:545.0   3rd Qu.:185.0                      3rd Qu.:226.0                                        
+                Max.   :11623.0   Max.   :18396   Max.   :600.0   Max.   :231.0                      Max.   :237.0                                        
+                NA's   :73694                     NA's   :688     NA's   :115                        NA's   :660                                          
+ R_emaildomain            C1                C2                C3                 C4                C5          C6                C7         
+ Length:100000      Min.   :   0.00   Min.   :   0.00   Min.   : 0.00000   Min.   :   0.00   Min.   :0   Min.   :   0.00   Min.   :   0.00  
+ Class :character   1st Qu.:   1.00   1st Qu.:   1.00   1st Qu.: 0.00000   1st Qu.:   1.00   1st Qu.:0   1st Qu.:   1.00   1st Qu.:   0.00  
+ Mode  :character   Median :   1.00   Median :   1.00   Median : 0.00000   Median :   1.00   Median :0   Median :   1.00   Median :   0.00  
+                    Mean   :  29.12   Mean   :  36.08   Mean   : 0.02083   Mean   :  16.15   Mean   :0   Mean   :  16.13   Mean   :  10.93  
+                    3rd Qu.:   2.00   3rd Qu.:   2.00   3rd Qu.: 0.00000   3rd Qu.:   1.00   3rd Qu.:0   3rd Qu.:   1.00   3rd Qu.:   1.00  
+                    Max.   :4684.00   Max.   :5691.00   Max.   :23.00000   Max.   :2252.00   Max.   :0   Max.   :2252.00   Max.   :2254.00  
+                                                                                                                                            
+       C8                C9         C10               C11              C12              C13               C14                D1               D2       
+ Min.   :   0.00   Min.   :0   Min.   :   0.00   Min.   :   0.0   Min.   :   0.0   Min.   :   0.00   Min.   :   0.00   Min.   :  0.00   Min.   :  0.0  
+ 1st Qu.:   1.00   1st Qu.:0   1st Qu.:   1.00   1st Qu.:   1.0   1st Qu.:   0.0   1st Qu.:   1.00   1st Qu.:   1.00   1st Qu.:  0.00   1st Qu.:  2.0  
+ Median :   1.00   Median :0   Median :   1.00   Median :   1.0   Median :   0.0   Median :   1.00   Median :   1.00   Median :  0.00   Median : 36.0  
+ Mean   :  20.17   Mean   :0   Mean   :  20.42   Mean   :  21.2   Mean   :  15.5   Mean   :  20.93   Mean   :  10.77   Mean   : 28.83   Mean   :121.3  
+ 3rd Qu.:   2.00   3rd Qu.:0   3rd Qu.:   2.00   3rd Qu.:   1.0   3rd Qu.:   1.0   3rd Qu.:   2.00   3rd Qu.:   1.00   3rd Qu.:  0.00   3rd Qu.:203.0  
+ Max.   :3330.00   Max.   :0   Max.   :3256.00   Max.   :3187.0   Max.   :3187.0   Max.   :2917.00   Max.   :1428.00   Max.   :640.00   Max.   :640.0  
+                                                                                                                       NA's   :155      NA's   :78733  
+       D3               D4               D5              D6              D7               D8                D9             D10           D11         
+ Min.   :  0.00   Min.   :-74.00   Min.   :  0.0   Min.   :-74     Min.   :  0.00   Min.   :   0.00   Min.   :0.00    Min.   :  0.00   Mode:logical  
+ 1st Qu.:  0.00   1st Qu.:  0.00   1st Qu.:  0.0   1st Qu.:  0     1st Qu.:  0.00   1st Qu.:   0.96   1st Qu.:0.21    1st Qu.:  0.00   NA's:100000   
+ Median :  1.00   Median :  0.00   Median :  0.0   Median :  0     Median :  0.00   Median :  33.71   Median :0.67    Median :  0.00                 
+ Mean   : 34.78   Mean   : 59.89   Mean   : 43.8   Mean   : 69     Mean   : 39.23   Mean   : 141.36   Mean   :0.56    Mean   : 21.68                 
+ 3rd Qu.: 16.00   3rd Qu.: 16.00   3rd Qu.: 17.0   3rd Qu.: 39     3rd Qu.: 14.00   3rd Qu.: 178.75   3rd Qu.:0.83    3rd Qu.:  0.00                 
+ Max.   :819.00   Max.   :864.00   Max.   :775.0   Max.   :873     Max.   :843.00   Max.   :1517.83   Max.   :0.96    Max.   :866.00                 
+ NA's   :79692    NA's   :54271    NA's   :76124   NA's   :52588   NA's   :74148    NA's   :47606     NA's   :47606   NA's   :51253                  
+      D12              D13              D14              D15            M1             M2             M3               M4               M5         
+ Min.   :-74.00   Min.   :  0.00   Min.   :-193.0   Min.   :-74.00   Mode:logical   Mode:logical   Mode:logical   Length:100000      Mode:logical  
+ 1st Qu.:  0.00   1st Qu.:  0.00   1st Qu.:   0.0   1st Qu.:  0.00   NA's:100000    NA's:100000    NA's:100000    Class :character   NA's:100000   
+ Median :  0.00   Median :  0.00   Median :   0.0   Median :  0.00                                                Mode  :character                 
+ Mean   : 52.88   Mean   : 17.26   Mean   :  57.5   Mean   : 52.79                                                                                 
+ 3rd Qu.: 13.00   3rd Qu.:  0.00   3rd Qu.:   2.0   3rd Qu.:  5.00                                                                                 
+ Max.   :648.00   Max.   :847.00   Max.   : 878.0   Max.   :878.00                                                                                 
+ NA's   :58199    NA's   :56376    NA's   :56054    NA's   :51915                                                                                  
+    M6             M7             M8             M9               V310               V311               V312               V313               V314        
+ Mode:logical   Mode:logical   Mode:logical   Mode:logical   Min.   :    0.00   Min.   :    0.00   Min.   :    0.00   Min.   :   0.000   Min.   :   0.00  
+ NA's:100000    NA's:100000    NA's:100000    NA's:100000    1st Qu.:    0.00   1st Qu.:    0.00   1st Qu.:    0.00   1st Qu.:   0.000   1st Qu.:   0.00  
+                                                             Median :    0.00   Median :    0.00   Median :    0.00   Median :   0.000   Median :   0.00  
+                                                             Mean   :   35.91   Mean   :    4.71   Mean   :   18.04   Mean   :   7.972   Mean   :  15.99  
+                                                             3rd Qu.:    0.00   3rd Qu.:    0.00   3rd Qu.:    0.00   3rd Qu.:   0.000   3rd Qu.:   0.00  
+                                                             Max.   :55125.00   Max.   :55125.00   Max.   :55125.00   Max.   :2000.000   Max.   :2250.00  
+                                                             NA's   :1          NA's   :1          NA's   :1          NA's   :155        NA's   :155      
+     id_01             id_02            id_03            id_04            id_05             id_06             id_07            id_08             id_09      
+ Min.   :-100.00   Min.   :     1   Min.   :-13.00   Min.   :-28.00   Min.   :-72.000   Min.   :-100.00   Min.   :-46.00   Min.   :-100.00   Min.   :-36.0  
+ 1st Qu.: -10.00   1st Qu.: 68568   1st Qu.:  0.00   1st Qu.:  0.00   1st Qu.:  0.000   1st Qu.:  -6.00   1st Qu.:  4.00   1st Qu.: -48.00   1st Qu.:  0.0  
+ Median :  -5.00   Median :126869   Median :  0.00   Median :  0.00   Median :  0.000   Median :   0.00   Median : 14.00   Median : -34.00   Median :  0.0  
+ Mean   : -10.41   Mean   :175813   Mean   :  0.06   Mean   : -0.07   Mean   :  1.623   Mean   :  -6.82   Mean   : 13.25   Mean   : -38.76   Mean   :  0.1  
+ 3rd Qu.:  -5.00   3rd Qu.:229899   3rd Qu.:  0.00   3rd Qu.:  0.00   3rd Qu.:  1.000   3rd Qu.:   0.00   3rd Qu.: 22.00   3rd Qu.: -23.00   3rd Qu.:  0.0  
+ Max.   :   0.00   Max.   :999595   Max.   : 10.00   Max.   :  0.00   Max.   : 52.000   Max.   :   0.00   Max.   : 61.00   Max.   :   0.00   Max.   : 25.0  
+                   NA's   :2276     NA's   :53566    NA's   :53566    NA's   :5033      NA's   :5033      NA's   :96414    NA's   :96414     NA's   :47606  
+     id_10            id_11           id_12               id_13           id_14           id_15              id_16               id_17           id_18      
+ Min.   :-100.0   Min.   : 90.00   Length:100000      Min.   :10.00   Min.   :-660.0   Length:100000      Length:100000      Min.   :100.0   Min.   :10.00  
+ 1st Qu.:   0.0   1st Qu.:100.00   Class :character   1st Qu.:49.00   1st Qu.:-360.0   Class :character   Class :character   1st Qu.:166.0   1st Qu.:13.00  
+ Median :   0.0   Median :100.00   Mode  :character   Median :52.00   Median :-300.0   Mode  :character   Mode  :character   Median :166.0   Median :15.00  
+ Mean   :  -0.3   Mean   : 99.75                      Mean   :48.03   Mean   :-343.8                                         Mean   :190.1   Mean   :14.24  
+ 3rd Qu.:   0.0   3rd Qu.:100.00                      3rd Qu.:52.00   3rd Qu.:-300.0                                         3rd Qu.:225.0   3rd Qu.:15.00  
+ Max.   :   0.0   Max.   :100.00                      Max.   :64.00   Max.   : 720.0                                         Max.   :229.0   Max.   :29.00  
+ NA's   :47606    NA's   :2203                        NA's   :11528   NA's   :45478                                          NA's   :3337    NA's   :68424  
+     id_19           id_20           id_21           id_22          id_23               id_24           id_25           id_26          id_27          
+ Min.   :100.0   Min.   :100.0   Min.   :100.0   Min.   :12.0    Length:100000      Min.   :11.00   Min.   :100.0   Min.   :100.0   Length:100000     
+ 1st Qu.:266.0   1st Qu.:266.0   1st Qu.:252.0   1st Qu.:14.0    Class :character   1st Qu.:11.00   1st Qu.:321.0   1st Qu.:119.0   Class :character  
+ Median :339.0   Median :472.0   Median :252.0   Median :14.0    Mode  :character   Median :11.00   Median :321.0   Median :149.0   Mode  :character  
+ Mean   :352.4   Mean   :405.2   Mean   :369.1   Mean   :16.1                       Mean   :12.79   Mean   :329.6   Mean   :149.6                     
+ 3rd Qu.:427.0   3rd Qu.:533.0   3rd Qu.:489.5   3rd Qu.:14.0                       3rd Qu.:15.00   3rd Qu.:371.0   3rd Qu.:169.0                     
+ Max.   :671.0   Max.   :660.0   Max.   :854.0   Max.   :44.0                       Max.   :26.00   Max.   :548.0   Max.   :216.0                     
+ NA's   :3374    NA's   :3415    NA's   :96409   NA's   :96405                      NA's   :96683   NA's   :96434   NA's   :96410                     
+    id_28              id_29              id_30              id_31               id_32          id_33              id_34             id_35        
+ Length:100000      Length:100000      Length:100000      Length:100000      Min.   : 0.00   Length:100000      Length:100000      Mode :logical  
+ Class :character   Class :character   Class :character   Class :character   1st Qu.:24.00   Class :character   Class :character   FALSE:44814    
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character   Median :24.00   Mode  :character   Mode  :character   TRUE :52990    
+                                                                             Mean   :26.52                                         NA's :2196     
+                                                                             3rd Qu.:32.00                                                        
+                                                                             Max.   :32.00                                                        
+                                                                             NA's   :47177                                                        
+   id_36           id_37           id_38          DeviceType         DeviceInfo       
+ Mode :logical   Mode :logical   Mode :logical   Length:100000      Length:100000     
+ FALSE:93074     FALSE:20964     FALSE:51740     Class :character   Class :character  
+ TRUE :4730      TRUE :76840     TRUE :46064     Mode  :character   Mode  :character  
+ NA's :2196      NA's :2196      NA's :2196                                           
+                                                                                      
+                                                                                      
+                                                                                      
+
+> sink()

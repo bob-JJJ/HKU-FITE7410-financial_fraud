@@ -1,0 +1,277 @@
+
+> cat("Outlier Treatment Summary Report\n")
+Outlier Treatment Summary Report
+
+> cat("Date:", Sys.time(), "\n\n")
+Date: 1740578683 
+
+
+> for(col in numeric_cols) {
++   if(!grepl("ID$|^is", col, ignore.case = TRUE) && length(unique(data_clean[[col]])) > 2) {
++     cat("\nVariable:", co .... [TRUNCATED] 
+
+Variable: TransactionDT
+Before cleaning:
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+  236337  1900286  5031202  6209144 10272711 15561083 
+
+After cleaning:
+    Min.  1st Qu.   Median     Mean  3rd Qu.     Max. 
+  236337  1900286  5031202  6209144 10272711 15561083 
+
+-------------------
+
+Variable: TransactionDT..Hour.
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+     65     527    1397    1724    2853    4322 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+     65     527    1397    1724    2853    4322 
+
+-------------------
+
+Variable: TransactionAmt
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   5.00   25.42   50.00   74.20  100.00  215.86 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   5.00   25.42   50.00   74.20  100.00  215.86 
+
+-------------------
+
+Variable: addr1
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  245.4   281.0   281.0   281.2   297.0   316.6 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  245.4   281.0   281.0   281.2   297.0   316.6 
+
+-------------------
+
+Variable: card1
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   1279    5666    9633    9850   15063   18268 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   1279    5666    9633    9850   15063   18268 
+
+-------------------
+
+Variable: card2
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  103.0   264.0   408.0   389.8   545.0   583.0 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  103.0   264.0   408.0   389.8   545.0   583.0 
+
+-------------------
+
+Variable: card3
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  106.0   150.0   150.0   161.9   185.0   190.0 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  106.0   150.0   150.0   161.9   185.0   190.0 
+
+-------------------
+
+Variable: card5
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  102.0   138.0   224.0   190.9   226.0   226.0 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  102.0   138.0   224.0   190.9   226.0   226.0 
+
+-------------------
+
+Variable: C1
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  1.000   1.000   1.000   1.474   2.000   3.224 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  1.000   1.000   1.000   1.474   2.000   3.224 
+
+-------------------
+
+Variable: C2
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  1.000   1.000   1.000   1.628   2.000   3.224 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  1.000   1.000   1.000   1.628   2.000   3.224 
+
+-------------------
+
+Variable: C7
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  0.0000  0.5553  1.0000  2.2239 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+ 0.0000  0.0000  0.0000  0.5553  1.0000  2.2239 
+
+-------------------
+
+Variable: C8
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  0.000   1.000   1.000   1.430   2.000   3.224 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  0.000   1.000   1.000   1.430   2.000   3.224 
+
+-------------------
+
+Variable: C10
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  0.000   1.000   1.000   1.381   2.000   3.224 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  0.000   1.000   1.000   1.381   2.000   3.224 
+
+-------------------
+
+Variable: C12
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  0.000   0.000   0.000   0.610   1.000   2.224 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  0.000   0.000   0.000   0.610   1.000   2.224 
+
+-------------------
+
+Variable: C13
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  0.000   1.000   1.000   1.299   2.000   3.224 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  0.000   1.000   1.000   1.299   2.000   3.224 
+
+-------------------
+
+Variable: D8
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  0.443  27.083  33.708  34.543  42.042  66.974 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  0.443  27.083  33.708  34.543  42.042  66.974 
+
+-------------------
+
+Variable: id_01
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-16.119 -10.000  -5.000  -7.156  -5.000   0.000 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-16.119 -10.000  -5.000  -7.156  -5.000   0.000 
+
+-------------------
+
+Variable: id_02
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   1109   69868  126869  165274  226310  474776 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+   1109   69868  126869  165274  226310  474776 
+
+-------------------
+
+Variable: id_05
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-2.2239  0.0000  0.0000  0.4237  1.0000  2.2239 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-2.2239  0.0000  0.0000  0.4237  1.0000  2.2239 
+
+-------------------
+
+Variable: id_06
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-11.119  -5.000   0.000  -2.686   0.000   0.000 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+-11.119  -5.000   0.000  -2.686   0.000   0.000 
+
+-------------------
+
+Variable: id_13
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  45.33   49.00   52.00   51.06   52.00   58.67 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  45.33   49.00   52.00   51.06   52.00   58.67 
+
+-------------------
+
+Variable: id_17
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  121.0   166.0   166.0   189.4   225.0   225.0 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  121.0   166.0   166.0   189.4   225.0   225.0 
+
+-------------------
+
+Variable: id_19
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  100.0   266.0   339.0   351.8   427.0   633.0 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  100.0   266.0   339.0   351.8   427.0   633.0 
+
+-------------------
+
+Variable: id_20
+Before cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  107.0   277.0   472.0   407.3   533.0   612.0 
+
+After cleaning:
+   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+  107.0   277.0   472.0   407.3   533.0   612.0 
+
+-------------------
+
+> sink()
