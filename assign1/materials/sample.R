@@ -93,6 +93,20 @@ p1 <- ggplot(data, aes(x = factor(isFraud), fill = factor(isFraud))) +
   geom_text(stat = "count", aes(label = scales::percent(..count../sum(..count..))), 
             vjust = -0.5)
 
+fraud_summary <- data %>%
+  group_by(isFraud) %>%
+  summarise(
+    count = n(),
+    percentage = n() / nrow(data) * 100,
+    avg_transaction = mean(TransactionAmt, na.rm = TRUE),
+    median_transaction = median(TransactionAmt, na.rm = TRUE),
+    min_transaction = min(TransactionAmt, na.rm = TRUE),
+    max_transaction = max(TransactionAmt, na.rm = TRUE)
+  )
+
+print("fraud_summary:")
+print(fraud_summary)
+
 ## 2. Transaction Amount Analysis
 p2 <- ggplot(data, aes(x = TransactionAmt)) + 
   geom_histogram(bins = 50, fill = "steelblue", alpha = 0.7) + 
@@ -100,6 +114,19 @@ p2 <- ggplot(data, aes(x = TransactionAmt)) +
   labs(title = "Distribution of Transaction Amounts (Log Scale)", 
        x = "Transaction Amount (log10)", 
        y = "Frequency")
+
+transaction_stats <- data %>%
+  group_by(isFraud) %>%
+  summarise(
+    mean_amt = mean(TransactionAmt, na.rm = TRUE),
+    median_amt = median(TransactionAmt, na.rm = TRUE),
+    q1_amt = quantile(TransactionAmt, 0.25, na.rm = TRUE),
+    q3_amt = quantile(TransactionAmt, 0.75, na.rm = TRUE),
+    std_amt = sd(TransactionAmt, na.rm = TRUE)
+  )
+
+print("transaction_stats:")
+print(transaction_stats)
 
 ## 3. Transaction Amount by Fraud Status
 p3 <- ggplot(data, aes(x = factor(isFraud), y = TransactionAmt, fill = factor(isFraud))) + 
@@ -182,12 +209,40 @@ p10 <- ggplot(top_r_domains, aes(x = reorder(R_emaildomain, n), y = n)) +
        x = "Email Domain", 
        y = "Count")
 
+email_fraud_analysis <- data %>%
+  filter(!is.na(P_emaildomain) & P_emaildomain != "") %>%
+  group_by(P_emaildomain) %>%
+  summarise(
+    total_count = n(),
+    fraud_count = sum(isFraud),
+    fraud_rate = mean(isFraud) * 100
+  ) %>%
+  filter(total_count >= 50) %>% # 只分析有足够样本的域名
+  arrange(desc(fraud_rate)) %>%
+  head(10)
+
+print("email_fraud_analysis:")
+print(email_fraud_analysis)
+
 ## 7. Product Category Distribution
 p11 <- ggplot(data, aes(x = ProductCD)) + 
   geom_bar(fill = "darkgreen") + 
   labs(title = "Distribution of Product Categories", 
        x = "Product Category", 
        y = "Count")
+
+product_fraud_detailed <- data %>%
+  group_by(ProductCD) %>%
+  summarise(
+    total_count = n(),
+    fraud_count = sum(isFraud),
+    fraud_rate = mean(isFraud) * 100,
+    avg_transaction = mean(TransactionAmt, na.rm = TRUE)
+  ) %>%
+  arrange(desc(fraud_rate))
+
+print("product_fraud:")
+print(product_fraud_detailed)
 
 ## 8. Fraud Rate by Product Category
 fraud_by_product <- data %>%
@@ -224,6 +279,20 @@ p13 <- ggplot(c_vars_melted, aes(x = value)) +
   theme(strip.background = element_rect(fill = "lightblue"),
         strip.text = element_text(face = "bold"))
 
+c_stats <- data %>%
+  select(C1, C2, C3, C4, C5, C6) %>%
+  summarise_all(list(
+    mean = ~mean(., na.rm = TRUE),
+    median = ~median(., na.rm = TRUE),
+    sd = ~sd(., na.rm = TRUE),
+    min = ~min(., na.rm = TRUE),
+    max = ~max(., na.rm = TRUE),
+    q25 = ~quantile(., 0.25, na.rm = TRUE),
+    q75 = ~quantile(., 0.75, na.rm = TRUE)
+  ))
+print("C Variables Detailed Statistics:")
+print(c_stats)
+
 ## 10. D1-D8 Features Distribution
 # Select a subset of D columns for visualization
 d_vars <- data %>% select(D1, D2, D3, D4, D5, D6) %>% na.omit()
@@ -243,6 +312,20 @@ p14 <- ggplot(d_vars_melted, aes(x = value)) +
 # Save the combined feature plots
 combined_plot4 <- grid.arrange(p13, p14, ncol = 1)
 ggsave("./output/plot/features_distribution.png", combined_plot4, width = 12, height = 12)
+
+d_stats <- data %>%
+  select(D1, D2, D3, D4, D5, D6) %>%
+  summarise_all(list(
+    mean = ~mean(., na.rm = TRUE),
+    median = ~median(., na.rm = TRUE),
+    sd = ~sd(., na.rm = TRUE),
+    min = ~min(., na.rm = TRUE),
+    max = ~max(., na.rm = TRUE),
+    q25 = ~quantile(., 0.25, na.rm = TRUE),
+    q75 = ~quantile(., 0.75, na.rm = TRUE)
+  ))
+print("D Variables Detailed Statistics:")
+print(d_stats)
 
 ## 11. Missing Value Analysis
 # Calculate the percentage of missing values in each column
@@ -307,6 +390,20 @@ p18 <- ggplot(top_devices, aes(x = reorder(DeviceInfo, n), y = n)) +
        x = "Device Info", 
        y = "Count")
 
+device_fraud_detailed <- data %>%
+  filter(!is.na(DeviceType)) %>%
+  group_by(DeviceType) %>%
+  summarise(
+    total_count = n(),
+    fraud_count = sum(isFraud),
+    fraud_rate = mean(isFraud) * 100,
+    avg_transaction = mean(TransactionAmt, na.rm = TRUE)
+  ) %>%
+  arrange(desc(fraud_rate))
+
+print("device_fraud:")
+print(device_fraud_detailed)
+
 ## 14. Fraud Rate by Device Type
 fraud_by_device <- data %>%
   filter(!is.na(DeviceType)) %>%
@@ -362,6 +459,12 @@ p22 <- ggplot(fraud_by_hour, aes(x = hour, y = count)) +
 # Combined fraud time analysis
 combined_plot7 <- grid.arrange(p21, p22, ncol = 1)
 ggsave("./output/plot/fraud_by_time.png", combined_plot7, width = 10, height = 8)
+
+high_risk_hours <- fraud_by_hour %>%
+  arrange(desc(fraud_rate)) %>%
+  head(5)
+
+print(high_risk_hours)
 
 # Final summary of univariate analysis
 cat("Univariate analysis completed. All plots saved to ./output/plot/ directory.")
