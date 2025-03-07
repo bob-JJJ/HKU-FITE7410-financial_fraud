@@ -1,0 +1,10 @@
+
+> print("Fraud labels (0: Normal, 1: Fraud):")
+[1] "Fraud labels (0: Normal, 1: Fraud):"
+
+> print(table(data$isFraud))
+
+    0     1 
+88682 11318 
+
+> sink()
