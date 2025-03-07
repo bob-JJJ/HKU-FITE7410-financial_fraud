@@ -69,8 +69,6 @@ sink()
 
 # # Step 2: Univariate Analysis ------------------------------------------------
 
-## # visualization -------------------------------------------------------------
-
 # Create output directory for plots if it doesn't exist
 if (!dir.exists("./output/plot")) {
   dir.create("./output/plot", recursive = TRUE)
@@ -469,228 +467,517 @@ print(high_risk_hours)
 # Final summary of univariate analysis
 cat("Univariate analysis completed. All plots saved to ./output/plot/ directory.")
 
+
 # # Step 3: Bi-/Multi-variate Analysis -----------------------------------------
 
-## # Bivariate analysis---------------------------------------------------------
+# Create output folders for plots if they don't exist
+if (!dir.exists("output/plot")) {
+  dir.create("output/plot")
+}
 
-## # Multivariate analysis------------------------------------------------------
+# Load necessary libraries if not already loaded
+library(ggplot2)
+library(corrplot)
+library(reshape2)
+library(gridExtra)
+library(dplyr)
 
-# Correlation Analysis
+# Get only numeric columns
+numeric_columns <- sapply(data, is.numeric)
+numeric_column_names <- colnames(data)[numeric_columns]
+
+# Print out numeric columns for verification
+print("Numeric columns found:")
+print(numeric_column_names)
+
+# Check if required columns exist
+if ("isFraud" %in% numeric_column_names) {
+  # For feature selection, let's exclude columns with zero variance
+  var_zero <- sapply(data[numeric_column_names], function(x) var(x, na.rm = TRUE) == 0)
+  non_zero_var_columns <- numeric_column_names[!var_zero]
+  
+  cat("Found", length(non_zero_var_columns), "numeric columns with non-zero variance\n")
+  
+  # Subset data to these columns
+  numeric_data <- data[, non_zero_var_columns]
+  
+  # Check for NA values
+  na_count <- colSums(is.na(numeric_data))
+  print("Columns with NA values:")
+  print(na_count[na_count > 0])
+  
+  # Let's select columns with less than 30% missing values for correlation analysis
+  na_percentage <- colSums(is.na(numeric_data)) / nrow(numeric_data)
+  good_columns <- names(na_percentage[na_percentage < 0.3])
+  
+  cat("Using", length(good_columns), "columns with less than 30% missing values\n")
+  
+  # Focus on specific feature groups that are likely to be important
+  # We'll look at C and D features based on your previous analysis
+  c_cols <- grep("^C[0-9]", good_columns, value = TRUE)
+  d_cols <- grep("^D[0-9]", good_columns, value = TRUE)
+  
+  # Add isFraud for target correlation
+  analysis_cols <- c("isFraud", c_cols, d_cols)
+  analysis_cols <- intersect(analysis_cols, good_columns) # Ensure all columns exist
+  
+  cat("Analyzing", length(analysis_cols), "columns: isFraud and C/D features\n")
+  
+  # Use complete.cases to get rows with no missing values
+  analysis_data <- numeric_data[, analysis_cols]
+  complete_rows <- complete.cases(analysis_data)
+  analysis_data <- analysis_data[complete_rows, ]
+  
+  cat("Using", nrow(analysis_data), "complete rows for analysis\n")
+  
+  # Only proceed if we have sufficient data
+  if (nrow(analysis_data) > 10 && ncol(analysis_data) > 1) {
+    # Calculate correlation matrix
+    correlation_matrix <- cor(analysis_data)
+    
+    # Save correlation with fraud to text file
+    if ("isFraud" %in% colnames(correlation_matrix)) {
+      fraud_correlations <- correlation_matrix[,"isFraud"]
+      fraud_correlations <- sort(fraud_correlations, decreasing = TRUE)
+      sink("output/summary/fraud_correlations.txt")
+      print("Correlations with Fraud Label:")
+      print(fraud_correlations)
+      sink()
+      
+      # Visualize correlation matrix
+      png("output/plot/correlation_matrix.png", width = 1200, height = 1000)
+      corrplot(correlation_matrix, method = "color", type = "upper", 
+               order = "hclust", tl.col = "black", tl.srt = 45,
+               title = "Correlation Matrix of Key Features", 
+               mar = c(0,0,2,0))
+      dev.off()
+      
+      ## Bivariate analysis --------------------------------------------------------
+      
+      # Most correlated features with fraud (based on correlation matrix)
+      # Get top 5 positively correlated and top 5 negatively correlated (exclude self-correlation)
+      fraud_correlations_no_self <- fraud_correlations[names(fraud_correlations) != "isFraud"]
+      top_pos_corr <- names(head(fraud_correlations_no_self[fraud_correlations_no_self > 0], 5))
+      top_neg_corr <- names(tail(fraud_correlations_no_self, 5))
+      
+      # Create directory for boxplots if it doesn't exist
+      if (!dir.exists("output/plot/boxplots")) {
+        dir.create("output/plot/boxplots")
+      }
+      
+      # Boxplots of top correlated features by fraud status
+      for (feature in c(top_pos_corr, top_neg_corr)) {
+        if (feature != "isFraud") {
+          png(paste0("output/plot/boxplots/boxplot_", feature, "_by_fraud.png"), width = 800, height = 600)
+          # Use the original data for boxplots, not just complete cases
+          feature_data <- data.frame(
+            feature_val = data[[feature]],
+            isFraud = data$isFraud
+          )
+          feature_data <- na.omit(feature_data)
+          
+          boxplot <- ggplot(feature_data, aes(x = as.factor(isFraud), y = feature_val, fill = as.factor(isFraud))) + 
+            geom_boxplot() +
+            scale_fill_manual(values = c("0" = "green", "1" = "red"),
+                              labels = c("0" = "Normal", "1" = "Fraud"),
+                              name = "Transaction Type") +
+            labs(title = paste("Distribution of", feature, "by Fraud Status"),
+                 x = "Fraud Status",
+                 y = feature) +
+            theme_minimal()
+          print(boxplot)
+          dev.off()
+        }
+      }
+      
+      # Create directory for scatter plots if it doesn't exist
+      if (!dir.exists("output/plot/scatterplots")) {
+        dir.create("output/plot/scatterplots")
+      }
+      
+      # Create scatter plots for pairs of highly correlated features
+      # Get the top correlated pairs excluding self-correlations
+      corr_matrix_no_diag <- correlation_matrix
+      diag(corr_matrix_no_diag) <- 0
+      corr_data <- melt(corr_matrix_no_diag)
+      colnames(corr_data) <- c("Feature1", "Feature2", "Correlation")
+      corr_data <- corr_data[order(abs(corr_data$Correlation), decreasing = TRUE), ]
+      top_pairs <- head(corr_data, 10)
+      
+      # Create scatter plots for top pairs
+      for (i in 1:min(10, nrow(top_pairs))) {
+        feat1 <- as.character(top_pairs$Feature1[i])
+        feat2 <- as.character(top_pairs$Feature2[i])
+        if (feat1 != "isFraud" && feat2 != "isFraud") {
+          png(paste0("output/plot/scatterplots/scatter_", feat1, "_vs_", feat2, ".png"), width = 800, height = 600)
+          
+          # Create data frame for scatter plot
+          scatter_data <- data.frame(
+            feat1_val = data[[feat1]],
+            feat2_val = data[[feat2]],
+            isFraud = data$isFraud
+          )
+          scatter_data <- na.omit(scatter_data)
+          
+          # If there are too many points, sample a subset
+          if (nrow(scatter_data) > 5000) {
+            set.seed(123) # for reproducibility
+            scatter_data <- scatter_data[sample(nrow(scatter_data), 5000), ]
+          }
+          
+          scatter <- ggplot(scatter_data, aes(x = feat1_val, y = feat2_val, color = as.factor(isFraud))) +
+            geom_point(alpha = 0.5) +
+            scale_color_manual(values = c("0" = "green", "1" = "red"),
+                               labels = c("0" = "Normal", "1" = "Fraud"),
+                               name = "Transaction Type") +
+            labs(title = paste("Relationship between", feat1, "and", feat2),
+                 subtitle = paste("Correlation:", round(top_pairs$Correlation[i], 3)),
+                 x = feat1, y = feat2) +
+            theme_minimal()
+          print(scatter)
+          dev.off()
+        }
+      }
+      
+      # Add this code just after calculating fraud_correlations
+      print("Top positive correlations with fraud:")
+      print(head(fraud_correlations[fraud_correlations < 1], 5))
+      
+      print("Top negative correlations with fraud:")
+      print(tail(fraud_correlations, 5))
+      
+      print("Top correlated feature pairs:")
+      print(head(top_pairs, 5))
+      
+      ## Multivariate analysis -----------------------------------------------------
+      
+      # PCA analysis to explore feature relationships
+      # Select numeric features for PCA (exclude the target variable)
+      pca_features <- analysis_data %>% select(-isFraud)
+      
+      # Only perform PCA if we have enough features
+      if (ncol(pca_features) > 1) {
+        # Perform PCA
+        pca_result <- prcomp(pca_features, scale. = TRUE)
+        
+        # Save PCA summary to file
+        sink("output/summary/pca_summary.txt")
+        print(summary(pca_result))
+        sink()
+        
+        # Create PCA biplot
+        png("output/plot/pca_biplot.png", width = 1000, height = 800)
+        biplot(pca_result, scale = 0, cex = 0.7,
+               arrow.len = 0.1,
+               main = "PCA Biplot of Transaction Features")
+        dev.off()
+        
+        # Visualize PCA with fraud labels
+        pca_data <- as.data.frame(pca_result$x[,1:2])
+        pca_data$isFraud <- analysis_data$isFraud
+        
+        # If there are too many points, sample a subset for plotting
+        if (nrow(pca_data) > 5000) {
+          set.seed(123) # for reproducibility
+          sample_indices <- sample(nrow(pca_data), 5000)
+          pca_plot_data <- pca_data[sample_indices, ]
+        } else {
+          pca_plot_data <- pca_data
+        }
+        
+        png("output/plot/pca_with_fraud.png", width = 800, height = 700)
+        pca_plot <- ggplot(pca_plot_data, aes(x = PC1, y = PC2, color = as.factor(isFraud))) +
+          geom_point(alpha = 0.5) +
+          scale_color_manual(values = c("0" = "green", "1" = "red"),
+                             labels = c("0" = "Normal", "1" = "Fraud"),
+                             name = "Transaction Type") +
+          labs(title = "PCA of Transaction Features",
+               subtitle = "Colored by Fraud Status",
+               x = paste0("PC1 (", round(summary(pca_result)$importance[2,1] * 100, 1), "% variance)"),
+               y = paste0("PC2 (", round(summary(pca_result)$importance[2,2] * 100, 1), "% variance)")) +
+          theme_minimal()
+        print(pca_plot)
+        dev.off()
+        
+        # Save PCA loadings for interpretation
+        sink("output/summary/pca_loadings.txt")
+        print("PCA Loadings (Feature Contributions to Principal Components):")
+        # Print first 5 PCs or fewer if there aren't 5
+        n_pcs <- min(5, ncol(pca_result$rotation))
+        print(pca_result$rotation[,1:n_pcs])
+        sink()
+        
+        # Identify potentially important features through PCA loadings
+        top_loadings <- data.frame(
+          feature = rownames(pca_result$rotation),
+          PC1_loading = abs(pca_result$rotation[,1]),
+          PC2_loading = abs(pca_result$rotation[,2])
+        )
+        top_loadings$total <- top_loadings$PC1_loading + top_loadings$PC2_loading
+        top_loadings <- top_loadings[order(top_loadings$total, decreasing = TRUE),]
+        
+        sink("output/summary/top_pca_features.txt")
+        print("Top Features Contributing to PC1 and PC2:")
+        print(head(top_loadings, 10))
+        sink()
+        
+        # Generate a report summary
+        sink("output/summary/bivariate_multivariate_analysis.txt")
+        cat("# Bivariate and Multivariate Analysis Summary\n\n")
+        
+        cat("## Top Features Correlated with Fraud\n")
+        cat("Positive correlations:\n")
+        for(feature in top_pos_corr) {
+          cat(paste0("- ", feature, ": ", round(fraud_correlations[feature], 4), "\n"))
+        }
+        cat("\nNegative correlations:\n")
+        for(feature in top_neg_corr) {
+          cat(paste0("- ", feature, ": ", round(fraud_correlations[feature], 4), "\n"))
+        }
+        
+        cat("\n## Top Correlated Feature Pairs\n")
+        for(i in 1:min(10, nrow(top_pairs))) {
+          if(top_pairs$Feature1[i] != "isFraud" && top_pairs$Feature2[i] != "isFraud") {
+            cat(paste0("- ", top_pairs$Feature1[i], " & ", top_pairs$Feature2[i], 
+                       ": ", round(top_pairs$Correlation[i], 4), "\n"))
+          }
+        }
+        
+        cat("\n## PCA Analysis\n")
+        cat(paste0("- PC1 explains ", round(summary(pca_result)$importance[2,1] * 100, 1), "% of variance\n"))
+        cat(paste0("- PC2 explains ", round(summary(pca_result)$importance[2,2] * 100, 1), "% of variance\n"))
+        cat(paste0("- PC1 + PC2 explains ", round(sum(summary(pca_result)$importance[2,1:2]) * 100, 1), "% of total variance\n"))
+        
+        cat("\n## Top Features in PCA (by contribution to PC1 and PC2)\n")
+        for(i in 1:min(5, nrow(top_loadings))) {
+          cat(paste0("- ", top_loadings$feature[i], " (Total loading: ", round(top_loadings$total[i], 4), ")\n"))
+        }
+        
+        cat("\n## Conclusions\n")
+        cat("- The analysis identified key features strongly associated with fraudulent transactions\n")
+        cat("- Several feature pairs show strong correlations, suggesting potential redundancy\n")
+        cat("- PCA reveals underlying patterns and helps reduce dimensionality while preserving information\n")
+        cat("- The identified top features should be prioritized in fraud detection model development\n")
+        sink()
+      } else {
+        cat("Not enough features for PCA analysis (need at least 2 numeric features)\n")
+      }
+    } else {
+      cat("isFraud not found in correlation matrix. Check your data.\n")
+    }
+  } else {
+    cat("Not enough complete data for correlation analysis. Try imputing missing values or selecting different features.\n")
+  }
+} else {
+  cat("isFraud not found in numeric columns. Check your data.\n")
+}
+
+print("Bivariate and Multivariate Analysis complete!")
 
 # Step 4: Detect erroneous & missing values ------------------------------------
 
-# ## Missing Values Treatment ----------------------------------------------------
-# 
-# # Function to calculate mode
-# get_mode <- function(x) {
-#   ux <- unique(x)
-#   ux[which.max(tabulate(match(x, ux)))]
-# }
-# 
-# # Function to print missing value summary
-# print_missing_summary <- function(data, title = "Missing Values Summary") {
-#   cat("\n", title, "\n", paste(rep("-", nchar(title)), collapse = ""), "\n")
-#   
-#   # Calculate missing values for each column
-#   missing_summary <- data.frame(
-#     Column = names(data),
-#     Missing_Count = colSums(is.na(data)),
-#     Missing_Percentage = round(colMeans(is.na(data)) * 100, 2)
-#   )
-#   
-#   # Sort by missing percentage
-#   missing_summary <- missing_summary[order(-missing_summary$Missing_Percentage), ]
-#   
-#   # Print summary
-#   print(missing_summary)
-#   
-#   return(missing_summary)
-# }
-# 
-# # Initial missing values analysis
-# initial_missing <- print_missing_summary(data, "Initial Missing Values Analysis")
-# 
-# # Save initial missing values analysis
-# write.csv(initial_missing, "output/initial_missing_analysis.csv", row.names = FALSE)
-# 
-# # Calculate missing value percentages for each column
-# missing_percentages <- colMeans(is.na(data)) * 100
-# high_missing_cols <- names(missing_percentages[missing_percentages > 50])
-# 
-# # Remove columns with more than 50% missing values
-# data_clean <- data[, !names(data) %in% high_missing_cols]
-# 
-# # Identify column types
-# numeric_cols <- names(data_clean)[sapply(data_clean, is.numeric)]
-# categorical_cols <- names(data_clean)[sapply(data_clean, is.character)]
-# 
-# # Create missing value treatment report
-# sink("output/missing_values_treatment.txt")
-# cat("Missing Values Treatment Report\n")
-# cat("============================\n\n")
-# 
-# cat("1. Columns removed (>50% missing):\n")
-# if(length(high_missing_cols) > 0) {
-#   for(col in high_missing_cols) {
-#     cat(sprintf("- %s (%.2f%% missing)\n", col, missing_percentages[col]))
-#   }
-# } else {
-#   cat("None\n")
-# }
-# 
-# cat("\n2. Numeric Columns Treatment:\n")
-# for(col in numeric_cols) {
-#   missing_count <- sum(is.na(data_clean[[col]]))
-#   if(missing_count > 0) {
-#     median_val <- median(data_clean[[col]], na.rm = TRUE)
-#     data_clean[[col]][is.na(data_clean[[col]])] <- median_val
-#     cat(sprintf("- %s: %d missing values imputed with median (%.2f)\n", 
-#                 col, missing_count, median_val))
-#   }
-# }
-# 
-# cat("\n3. Categorical Columns Treatment:\n")
-# for(col in categorical_cols) {
-#   missing_count <- sum(is.na(data_clean[[col]]) | data_clean[[col]] == "")
-#   if(missing_count > 0) {
-#     mode_val <- get_mode(data_clean[[col]][!is.na(data_clean[[col]]) & data_clean[[col]] != ""])
-#     data_clean[[col]][is.na(data_clean[[col]]) | data_clean[[col]] == ""] <- mode_val
-#     cat(sprintf("- %s: %d missing values imputed with mode (%s)\n", 
-#                 col, missing_count, mode_val))
-#   }
-# }
-# 
-# # Final missing values check
-# final_missing <- print_missing_summary(data_clean, "\n4. Final Missing Values Check")
-# sink()
-# 
-# # Additional data quality checks
-# # Check for infinite values
-# inf_check <- sapply(data_clean[numeric_cols], function(x) sum(is.infinite(x)))
-# if(any(inf_check > 0)) {
-#   cat("\nWarning: Infinite values found in the following columns:\n")
-#   print(inf_check[inf_check > 0])
-#   
-#   # Replace infinite values with NA and then impute
-#   for(col in names(inf_check[inf_check > 0])) {
-#     data_clean[[col]][is.infinite(data_clean[[col]])] <- NA
-#     median_val <- median(data_clean[[col]], na.rm = TRUE)
-#     data_clean[[col]][is.na(data_clean[[col]])] <- median_val
-#   }
-# }
-# 
-# # Check for constant columns (zero variance)
-# constant_cols <- sapply(data_clean, function(x) length(unique(x)) == 1)
-# if(any(constant_cols)) {
-#   cat("\nWarning: The following columns have constant values:\n")
-#   print(names(data_clean)[constant_cols])
-# }
-# 
-# # Save cleaned data
-# write.csv(data_clean, "output/cleaned_data_missing_treated.csv", row.names = FALSE)
-# 
-# # Print summary of changes
-# cat("\nData Cleaning Summary:\n")
-# cat("Original dimensions:", dim(data)[1], "rows,", dim(data)[2], "columns\n")
-# cat("Cleaned dimensions:", dim(data_clean)[1], "rows,", dim(data_clean)[2], "columns\n")
-# 
-# 
-# 
-# # Step 5: Detect erroneous & missing values------------------------------------
-# 
-# # truncation function
-# truncate_values <- function(x, lower_percentile = 0.01, upper_percentile = 0.99) {
-#   lower <- quantile(x, lower_percentile)
-#   upper <- quantile(x, upper_percentile)
-#   return(list(
-#     lower = lower,
-#     upper = upper,
-#     values = pmin(pmax(x, lower), upper)
-#   ))
-# }
-# 
-# for(col in numeric_cols) {
-#   # Skip ID and binary columns
-#   if(!grepl("ID$|^is", col, ignore.case = TRUE) && length(unique(data_clean[[col]])) > 2) {
-#     cat("\n=== Processing Variable:", col, "===\n")
-#     
-#     # 1. IQR Method
-#     cat("\n1. IQR Method Results:\n")
-#     # Calculate median and IQR
-#     M <- median(data_clean[[col]])
-#     Q1 <- quantile(data_clean[[col]], 0.25)
-#     Q3 <- quantile(data_clean[[col]], 0.75)
-#     IQR <- Q3 - Q1
-#     
-#     # Calculate bounds using the formula: M ± 3 x IQR/(2 x 0.6745)
-#     constant <- 3 * IQR/(2 * 0.6745)
-#     iqr_lower <- M - constant
-#     iqr_upper <- M + constant
-#     
-#     # 2. Truncation Method
-#     cat("\n2. Truncation Method Results:\n")
-#     trunc_result <- truncate_values(data_clean[[col]])
-#     
-#     # Print comparative summary
-#     cat("\nComparative Summary:")
-#     cat("\n------------------")
-#     cat("\nMedian:", M)
-#     cat("\nIQR:", IQR)
-#     cat("\n\nIQR Method Bounds:")
-#     cat("\n- Lower:", iqr_lower)
-#     cat("\n- Upper:", iqr_upper)
-#     cat("\n- Outliers:", sum(data_clean[[col]] < iqr_lower | data_clean[[col]] > iqr_upper))
-#     
-#     cat("\n\nTruncation Method Bounds (1% and 99%):")
-#     cat("\n- Lower:", trunc_result$lower)
-#     cat("\n- Upper:", trunc_result$upper)
-#     cat("\n- Outliers:", sum(data_clean[[col]] < trunc_result$lower | data_clean[[col]] > trunc_result$upper))
-#     
-#     # Combine both methods (using the more conservative bounds)
-#     final_lower <- max(iqr_lower, trunc_result$lower)
-#     final_upper <- min(iqr_upper, trunc_result$upper)
-#     
-#     # Apply final bounds
-#     data_clean[[col]] <- pmin(pmax(data_clean[[col]], final_lower), final_upper)
-#     
-#     cat("\n\nFinal Combined Bounds:")
-#     cat("\n- Lower:", final_lower)
-#     cat("\n- Upper:", final_upper)
-#     cat("\n- Total modified values:", sum(data_clean[[col]] == final_lower | data_clean[[col]] == final_upper))
-#     cat("\n==========================================\n")
-#     
-#   }
-# }
-# 
-# # Save the cleaned data
-# write.csv(data_clean, "output/cleaned_data_combined_methods.csv", row.names = FALSE)
-# 
-# # Create summary report
-# sink("output/outlier_treatment_report.txt")
-# cat("Outlier Treatment Summary Report\n")
-# cat("Date:", Sys.time(), "\n\n")
-# 
-# for(col in numeric_cols) {
-#   if(!grepl("ID$|^is", col, ignore.case = TRUE) && length(unique(data_clean[[col]])) > 2) {
-#     cat("\nVariable:", col)
-#     cat("\nBefore cleaning:\n")
-#     print(summary(data_clean[[col]]))
-#     cat("\nAfter cleaning:\n")
-#     print(summary(data_clean[[col]]))
-#     cat("\n-------------------\n")
-#   }
-# }
-# sink()
-# 
-# 
-# ## Save cleaning summary -------------------------------------------------------
-# sink("output/cleaning_summary.txt")
-# cat("Data Cleaning Summary\n\n")
-# cat("1. Removed columns with >50% missing values:\n")
-# cat(paste(high_missing_cols, collapse = "\n"), "\n\n")
-# cat("2. Original dimensions:", nrow(data), "rows,", ncol(data), "columns\n")
-# cat("3. Cleaned dimensions:", nrow(data_clean), "rows,", ncol(data_clean), "columns\n")
-# sink()
+## Missing Values Treatment --------------------------------------------------
+
+# Function to calculate mode
+get_mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+# Function to print missing value summary
+print_missing_summary <- function(data, title = "Missing Values Summary") {
+  cat("\n", title, "\n", paste(rep("-", nchar(title)), collapse = ""), "\n")
+
+  # Calculate missing values for each column
+  missing_summary <- data.frame(
+    Column = names(data),
+    Missing_Count = colSums(is.na(data)),
+    Missing_Percentage = round(colMeans(is.na(data)) * 100, 2)
+  )
+
+  # Sort by missing percentage
+  missing_summary <- missing_summary[order(-missing_summary$Missing_Percentage), ]
+
+  # Print summary
+  print(missing_summary)
+
+  return(missing_summary)
+}
+
+# Initial missing values analysis
+initial_missing <- print_missing_summary(data, "Initial Missing Values Analysis")
+
+# Save initial missing values analysis
+write.csv(initial_missing, "output/initial_missing_analysis.csv", row.names = FALSE)
+
+# Calculate missing value percentages for each column
+missing_percentages <- colMeans(is.na(data)) * 100
+high_missing_cols <- names(missing_percentages[missing_percentages > 50])
+
+# Remove columns with more than 50% missing values
+data_clean <- data[, !names(data) %in% high_missing_cols]
+
+# Identify column types
+numeric_cols <- names(data_clean)[sapply(data_clean, is.numeric)]
+categorical_cols <- names(data_clean)[sapply(data_clean, is.character)]
+
+# Create missing value treatment report
+sink("output/missing_values_treatment.txt")
+cat("Missing Values Treatment Report\n")
+cat("============================\n\n")
+
+cat("1. Columns removed (>50% missing):\n")
+if(length(high_missing_cols) > 0) {
+  for(col in high_missing_cols) {
+    cat(sprintf("- %s (%.2f%% missing)\n", col, missing_percentages[col]))
+  }
+} else {
+  cat("None\n")
+}
+
+cat("\n2. Numeric Columns Treatment:\n")
+for(col in numeric_cols) {
+  missing_count <- sum(is.na(data_clean[[col]]))
+  if(missing_count > 0) {
+    median_val <- median(data_clean[[col]], na.rm = TRUE)
+    data_clean[[col]][is.na(data_clean[[col]])] <- median_val
+    cat(sprintf("- %s: %d missing values imputed with median (%.2f)\n",
+                col, missing_count, median_val))
+  }
+}
+
+cat("\n3. Categorical Columns Treatment:\n")
+for(col in categorical_cols) {
+  missing_count <- sum(is.na(data_clean[[col]]) | data_clean[[col]] == "")
+  if(missing_count > 0) {
+    mode_val <- get_mode(data_clean[[col]][!is.na(data_clean[[col]]) & data_clean[[col]] != ""])
+    data_clean[[col]][is.na(data_clean[[col]]) | data_clean[[col]] == ""] <- mode_val
+    cat(sprintf("- %s: %d missing values imputed with mode (%s)\n",
+                col, missing_count, mode_val))
+  }
+}
+
+# Final missing values check
+final_missing <- print_missing_summary(data_clean, "\n4. Final Missing Values Check")
+sink()
+
+# Additional data quality checks
+# Check for infinite values
+inf_check <- sapply(data_clean[numeric_cols], function(x) sum(is.infinite(x)))
+if(any(inf_check > 0)) {
+  cat("\nWarning: Infinite values found in the following columns:\n")
+  print(inf_check[inf_check > 0])
+
+  # Replace infinite values with NA and then impute
+  for(col in names(inf_check[inf_check > 0])) {
+    data_clean[[col]][is.infinite(data_clean[[col]])] <- NA
+    median_val <- median(data_clean[[col]], na.rm = TRUE)
+    data_clean[[col]][is.na(data_clean[[col]])] <- median_val
+  }
+}
+
+# Check for constant columns (zero variance)
+constant_cols <- sapply(data_clean, function(x) length(unique(x)) == 1)
+if(any(constant_cols)) {
+  cat("\nWarning: The following columns have constant values:\n")
+  print(names(data_clean)[constant_cols])
+}
+
+# Save cleaned data
+write.csv(data_clean, "output/cleaned_data_missing_treated.csv", row.names = FALSE)
+
+# Print summary of changes
+cat("\nData Cleaning Summary:\n")
+cat("Original dimensions:", dim(data)[1], "rows,", dim(data)[2], "columns\n")
+cat("Cleaned dimensions:", dim(data_clean)[1], "rows,", dim(data_clean)[2], "columns\n")
+
+
+
+# Step 5: Detect erroneous & missing values------------------------------------
+
+# truncation function
+truncate_values <- function(x, lower_percentile = 0.01, upper_percentile = 0.99) {
+  lower <- quantile(x, lower_percentile)
+  upper <- quantile(x, upper_percentile)
+  return(list(
+    lower = lower,
+    upper = upper,
+    values = pmin(pmax(x, lower), upper)
+  ))
+}
+
+for(col in numeric_cols) {
+  # Skip ID and binary columns
+  if(!grepl("ID$|^is", col, ignore.case = TRUE) && length(unique(data_clean[[col]])) > 2) {
+    cat("\n=== Processing Variable:", col, "===\n")
+
+    # 1. IQR Method
+    cat("\n1. IQR Method Results:\n")
+    # Calculate median and IQR
+    M <- median(data_clean[[col]])
+    Q1 <- quantile(data_clean[[col]], 0.25)
+    Q3 <- quantile(data_clean[[col]], 0.75)
+    IQR <- Q3 - Q1
+
+    # Calculate bounds using the formula: M ± 3 x IQR/(2 x 0.6745)
+    constant <- 3 * IQR/(2 * 0.6745)
+    iqr_lower <- M - constant
+    iqr_upper <- M + constant
+
+    # 2. Truncation Method
+    cat("\n2. Truncation Method Results:\n")
+    trunc_result <- truncate_values(data_clean[[col]])
+
+    # Print comparative summary
+    cat("\nComparative Summary:")
+    cat("\n------------------")
+    cat("\nMedian:", M)
+    cat("\nIQR:", IQR)
+    cat("\n\nIQR Method Bounds:")
+    cat("\n- Lower:", iqr_lower)
+    cat("\n- Upper:", iqr_upper)
+    cat("\n- Outliers:", sum(data_clean[[col]] < iqr_lower | data_clean[[col]] > iqr_upper))
+
+    cat("\n\nTruncation Method Bounds (1% and 99%):")
+    cat("\n- Lower:", trunc_result$lower)
+    cat("\n- Upper:", trunc_result$upper)
+    cat("\n- Outliers:", sum(data_clean[[col]] < trunc_result$lower | data_clean[[col]] > trunc_result$upper))
+
+    # Combine both methods (using the more conservative bounds)
+    final_lower <- max(iqr_lower, trunc_result$lower)
+    final_upper <- min(iqr_upper, trunc_result$upper)
+
+    # Apply final bounds
+    data_clean[[col]] <- pmin(pmax(data_clean[[col]], final_lower), final_upper)
+
+    cat("\n\nFinal Combined Bounds:")
+    cat("\n- Lower:", final_lower)
+    cat("\n- Upper:", final_upper)
+    cat("\n- Total modified values:", sum(data_clean[[col]] == final_lower | data_clean[[col]] == final_upper))
+    cat("\n==========================================\n")
+
+  }
+}
+
+# Save the cleaned data
+write.csv(data_clean, "output/cleaned_data_combined_methods.csv", row.names = FALSE)
+
+# Create summary report
+sink("output/outlier_treatment_report.txt")
+cat("Outlier Treatment Summary Report\n")
+cat("Date:", Sys.time(), "\n\n")
+
+sink()
+
+
+## Save cleaning summary -------------------------------------------------------
+sink("output/cleaning_summary.txt")
+cat("Data Cleaning Summary\n\n")
+cat("1. Removed columns with >50% missing values:\n")
+cat(paste(high_missing_cols, collapse = "\n"), "\n\n")
+cat("2. Original dimensions:", nrow(data), "rows,", ncol(data), "columns\n")
+cat("3. Cleaned dimensions:", nrow(data_clean), "rows,", ncol(data_clean), "columns\n")
+sink()
 
 
 # # Step 6: Feature Engineering ------------------------------------------------

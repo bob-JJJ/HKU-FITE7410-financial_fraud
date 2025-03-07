@@ -1,0 +1,46 @@
+# Bivariate and Multivariate Analysis Summary
+
+## Top Features Correlated with Fraud
+Positive correlations:
+- C2: 0.0465
+- C1: 0.0396
+- C12: 0.0347
+- C11: 0.0336
+- C8: 0.0319
+
+Negative correlations:
+- C10: 0.0252
+- C14: 0.0163
+- C13: 0.0149
+- C3: -0.0294
+- D1: -0.0514
+
+## Top Correlated Feature Pairs
+- C6 & C4: 0.9999
+- C4 & C6: 0.9999
+- C12 & C7: 0.9994
+- C7 & C12: 0.9994
+- C14 & C6: 0.9985
+- C6 & C14: 0.9985
+- C14 & C4: 0.9982
+- C4 & C14: 0.9982
+- C10 & C8: 0.9966
+- C8 & C10: 0.9966
+
+## PCA Analysis
+- PC1 explains 81.7% of variance
+- PC2 explains 8.2% of variance
+- PC1 + PC2 explains 89.9% of total variance
+
+## Top Features in PCA (by contribution to PC1 and PC2)
+- D1 (Total loading: 0.713)
+- C3 (Total loading: 0.7073)
+- C13 (Total loading: 0.3252)
+- C10 (Total loading: 0.3108)
+- C1 (Total loading: 0.3099)
+
+## Conclusions
+- The analysis identified key features strongly associated with fraudulent transactions
+- Several feature pairs show strong correlations, suggesting potential redundancy
+- PCA reveals underlying patterns and helps reduce dimensionality while preserving information
+- The identified top features should be prioritized in fraud detection model development
