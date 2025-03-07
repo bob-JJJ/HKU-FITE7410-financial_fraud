@@ -9,12 +9,21 @@
 # # Preparation ----------------------------------------------------------------
 
 # Install packages/load libraries
+if (!require("gridExtra")) install.packages("gridExtra")
+if (!require("reshape2")) install.packages("reshape2")
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("dplyr")) install.packages("dplyr")
+
 #install.packages(c("tidyverse", "naniar", "mice", "outliers", "car"))
 library(tidyverse)
 library(naniar)     # For missing value analysis
 library(mice)       # For missing value imputation
 library(outliers)   # For outlier detection
 library(car)        # For data visualization
+library(ggplot2)
+library(gridExtra)
+library(reshape2)
+library(dplyr)
 
 
 # Load the data
@@ -83,7 +92,7 @@ for(col in categorical_cols) {
 
 ## Outlier Detection (IQR + Truncation) -----------------------------------------------------
 
-# First define truncation function
+# truncation function
 truncate_values <- function(x, lower_percentile = 0.01, upper_percentile = 0.99) {
   lower <- quantile(x, lower_percentile)
   upper <- quantile(x, upper_percentile)
@@ -150,7 +159,7 @@ for(col in numeric_cols) {
 # Save the cleaned data
 write.csv(data_clean, "output/cleaned_data_combined_methods.csv", row.names = FALSE)
 
-# Optional: Create summary report
+# Create summary report
 sink("output/outlier_treatment_report.txt")
 cat("Outlier Treatment Summary Report\n")
 cat("Date:", Sys.time(), "\n\n")
@@ -167,7 +176,7 @@ for(col in numeric_cols) {
 }
 sink()
 
-# 4. Save cleaning summary
+## Save cleaning summary -------------------------------------------------------
 sink("output/cleaning_summary.txt")
 cat("Data Cleaning Summary\n\n")
 cat("1. Removed columns with >50% missing values:\n")
@@ -177,7 +186,9 @@ cat("3. Cleaned dimensions:", nrow(data_clean), "rows,", ncol(data_clean), "colu
 sink()
 
 
-# 2. Univariate Analysis
+
+## Write your code here
+
 #ggplot(...)
 #hist(...)
 #...
