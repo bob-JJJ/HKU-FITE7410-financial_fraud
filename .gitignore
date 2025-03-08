@@ -16,3 +16,7 @@ __pycache__/
 **/__pycache__/
 *.py[cod]
 **/*.py[cod]
+
+# 所有的输出
+output/
+**/output/
