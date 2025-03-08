@@ -1,0 +1,260 @@
+
+> cat("Outlier Treatment Summary Report\n")
+Outlier Treatment Summary Report
+
+> cat("===============================\n")
+===============================
+
+> cat("Date:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n\n")
+Date: 2025-03-08 01:41:16 
+
+
+> cat("1. Outlier Detection Methods:\n")
+1. Outlier Detection Methods:
+
+> cat("   - IQR Method: Using robust statistics with formula M ± 3 × IQR/(2 × 0.6745)\n")
+   - IQR Method: Using robust statistics with formula M ± 3 × IQR/(2 × 0.6745)
+
+> cat("   - Percentile Method: Truncating values below 1st or above 99th percentile\n")
+   - Percentile Method: Truncating values below 1st or above 99th percentile
+
+> cat("   - Combined Method: Using the more conservative bounds from both methods\n\n")
+   - Combined Method: Using the more conservative bounds from both methods
+
+
+> cat("2. Variables with Most Outliers:\n")
+2. Variables with Most Outliers:
+
+> top_outliers <- outlier_summary[outlier_summary$Method == "Combined Method",]
+
+> top_outliers <- top_outliers[order(-top_outliers$Outliers_Count),][1:5,]
+
+> for(i in 1:nrow(top_outliers)) {
++   cat(sprintf("   - %s: %d outliers (%.2f%% of data)\n", 
++               top_outliers$Variable[i], 
++            .... [TRUNCATED] 
+   - addr2: 100000 outliers (100.00% of data)
+   - C3: 100000 outliers (100.00% of data)
+   - C4: 100000 outliers (100.00% of data)
+   - C6: 100000 outliers (100.00% of data)
+   - C11: 100000 outliers (100.00% of data)
+
+> cat("\n3. Statistical Impact of Outlier Treatment:\n")
+
+3. Statistical Impact of Outlier Treatment:
+
+> for(i in 1:nrow(before_after_stats)) {
++   cat(sprintf("\n   %s:\n", before_after_stats$Variable[i]))
++   cat(sprintf("   - Before: Range [%.2f to % ..." ... [TRUNCATED] 
+
+   TransactionDT:
+   - Before: Range [86506.00 to 15811030.00], Mean = 6209720.38, SD = 4794520.75
+   - After:  Range [236336.69 to 15561082.90], Mean = 6209143.71, SD = 4790857.86
+   - Impact: SD reduced by 0.1%
+
+   TransactionDT..Hour.:
+   - Before: Range [24.00 to 4391.00], Mean = 1724.42, SD = 1331.81
+   - After:  Range [65.00 to 4322.00], Mean = 1724.26, SD = 1330.80
+   - Impact: SD reduced by 0.1%
+
+   TransactionAmt:
+   - Before: Range [0.27 to 1800.00], Mean = 83.66, SD = 99.85
+   - After:  Range [5.00 to 215.86], Mean = 74.20, SD = 60.73
+   - Impact: SD reduced by 39.2%
+
+   addr1:
+   - Before: Range [82.00 to 522.00], Mean = 279.64, SD = 75.06
+   - After:  Range [245.42 to 316.58], Mean = 281.25, SD = 23.28
+   - Impact: SD reduced by 69.0%
+
+   addr2:
+   - Before: Range [18.00 to 110.00], Mean = 73.00, SD = 2.98
+   - After:  Range [73.00 to 73.00], Mean = 73.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   card1:
+   - Before: Range [1000.00 to 18396.00], Mean = 9849.41, SD = 5038.87
+   - After:  Range [1279.00 to 18268.00], Mean = 9850.42, SD = 5036.06
+   - Impact: SD reduced by 0.1%
+
+   card2:
+   - Before: Range [100.00 to 600.00], Mean = 389.83, SD = 160.16
+   - After:  Range [103.00 to 583.00], Mean = 389.83, SD = 160.10
+   - Impact: SD reduced by 0.0%
+
+   card3:
+   - Before: Range [100.00 to 231.00], Mean = 162.10, SD = 19.45
+   - After:  Range [106.00 to 190.00], Mean = 161.94, SD = 19.02
+   - Impact: SD reduced by 2.2%
+
+   card5:
+   - Before: Range [100.00 to 237.00], Mean = 190.96, SD = 44.85
+   - After:  Range [102.00 to 226.00], Mean = 190.91, SD = 44.80
+   - Impact: SD reduced by 0.1%
+
+   C1:
+   - Before: Range [0.00 to 4684.00], Mean = 29.12, SD = 253.27
+   - After:  Range [1.00 to 3.22], Mean = 1.47, SD = 0.81
+   - Impact: SD reduced by 99.7%
+
+   C2:
+   - Before: Range [0.00 to 5691.00], Mean = 36.08, SD = 295.24
+   - After:  Range [1.00 to 3.22], Mean = 1.63, SD = 0.91
+   - Impact: SD reduced by 99.7%
+
+   C3:
+   - Before: Range [0.00 to 23.00], Mean = 0.02, SD = 0.25
+   - After:  Range [0.00 to 0.00], Mean = 0.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   C4:
+   - Before: Range [0.00 to 2252.00], Mean = 16.15, SD = 133.90
+   - After:  Range [1.00 to 1.00], Mean = 1.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   C6:
+   - Before: Range [0.00 to 2252.00], Mean = 16.13, SD = 134.48
+   - After:  Range [1.00 to 1.00], Mean = 1.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   C7:
+   - Before: Range [0.00 to 2254.00], Mean = 10.93, SD = 118.65
+   - After:  Range [0.00 to 2.22], Mean = 0.56, SD = 0.71
+   - Impact: SD reduced by 99.4%
+
+   C8:
+   - Before: Range [0.00 to 3330.00], Mean = 20.17, SD = 183.61
+   - After:  Range [0.00 to 3.22], Mean = 1.43, SD = 0.83
+   - Impact: SD reduced by 99.5%
+
+   C10:
+   - Before: Range [0.00 to 3256.00], Mean = 20.42, SD = 184.28
+   - After:  Range [0.00 to 3.22], Mean = 1.38, SD = 0.87
+   - Impact: SD reduced by 99.5%
+
+   C11:
+   - Before: Range [0.00 to 3187.00], Mean = 21.20, SD = 179.33
+   - After:  Range [1.00 to 1.00], Mean = 1.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   C12:
+   - Before: Range [0.00 to 3187.00], Mean = 15.50, SD = 166.47
+   - After:  Range [0.00 to 2.22], Mean = 0.61, SD = 0.78
+   - Impact: SD reduced by 99.5%
+
+   C13:
+   - Before: Range [0.00 to 2917.00], Mean = 20.93, SD = 167.98
+   - After:  Range [0.00 to 3.22], Mean = 1.30, SD = 0.96
+   - Impact: SD reduced by 99.4%
+
+   C14:
+   - Before: Range [0.00 to 1428.00], Mean = 10.77, SD = 88.53
+   - After:  Range [1.00 to 1.00], Mean = 1.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   D1:
+   - Before: Range [0.00 to 640.00], Mean = 28.78, SD = 93.94
+   - After:  Range [0.00 to 0.00], Mean = 0.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   D8:
+   - Before: Range [0.00 to 1517.83], Mean = 90.11, SD = 173.96
+   - After:  Range [0.44 to 66.97], Mean = 34.54, SD = 21.74
+   - Impact: SD reduced by 87.5%
+
+   D9:
+   - Before: Range [0.00 to 0.96], Mean = 0.61, SD = 0.24
+   - After:  Range [0.67 to 0.67], Mean = 0.67, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   V310:
+   - Before: Range [0.00 to 55125.00], Mean = 35.91, SD = 344.80
+   - After:  Range [0.00 to 0.00], Mean = 0.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   V311:
+   - Before: Range [0.00 to 55125.00], Mean = 4.71, SD = 213.71
+   - After:  Range [0.00 to 0.00], Mean = 0.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   V312:
+   - Before: Range [0.00 to 55125.00], Mean = 18.04, SD = 239.32
+   - After:  Range [0.00 to 0.00], Mean = 0.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   V313:
+   - Before: Range [0.00 to 2000.00], Mean = 7.96, SD = 42.75
+   - After:  Range [0.00 to 0.00], Mean = 0.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   V314:
+   - Before: Range [0.00 to 2250.00], Mean = 15.96, SD = 88.16
+   - After:  Range [0.00 to 0.00], Mean = 0.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   id_01:
+   - Before: Range [-100.00 to 0.00], Mean = -10.41, SD = 14.74
+   - After:  Range [-16.12 to 0.00], Mean = -7.16, SD = 5.22
+   - Impact: SD reduced by 64.6%
+
+   id_02:
+   - Before: Range [1.00 to 999595.00], Mean = 174698.67, SD = 158403.66
+   - After:  Range [1108.98 to 474775.60], Mean = 165273.91, SD = 129832.30
+   - Impact: SD reduced by 18.0%
+
+   id_05:
+   - Before: Range [-72.00 to 52.00], Mean = 1.54, SD = 5.15
+   - After:  Range [-2.22 to 2.22], Mean = 0.42, SD = 1.04
+   - Impact: SD reduced by 79.9%
+
+   id_06:
+   - Before: Range [-100.00 to 0.00], Mean = -6.48, SD = 16.31
+   - After:  Range [-11.12 to 0.00], Mean = -2.69, SD = 4.39
+   - Impact: SD reduced by 73.1%
+
+   id_09:
+   - Before: Range [-36.00 to 25.00], Mean = 0.05, SD = 0.73
+   - After:  Range [0.00 to 0.00], Mean = 0.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   id_10:
+   - Before: Range [-100.00 to 0.00], Mean = -0.16, SD = 2.03
+   - After:  Range [0.00 to 0.00], Mean = 0.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   id_11:
+   - Before: Range [90.00 to 100.00], Mean = 99.75, SD = 1.11
+   - After:  Range [100.00 to 100.00], Mean = 100.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   id_13:
+   - Before: Range [10.00 to 64.00], Mean = 48.49, SD = 11.15
+   - After:  Range [45.33 to 58.67], Mean = 51.06, SD = 3.73
+   - Impact: SD reduced by 66.6%
+
+   id_14:
+   - Before: Range [-660.00 to 720.00], Mean = -323.90, SD = 73.41
+   - After:  Range [-300.00 to -300.00], Mean = -300.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+   id_17:
+   - Before: Range [100.00 to 229.00], Mean = 189.29, SD = 30.30
+   - After:  Range [121.00 to 225.00], Mean = 189.44, SD = 29.89
+   - Impact: SD reduced by 1.3%
+
+   id_19:
+   - Before: Range [100.00 to 671.00], Mean = 351.92, SD = 138.27
+   - After:  Range [100.00 to 633.00], Mean = 351.78, SD = 137.98
+   - Impact: SD reduced by 0.2%
+
+   id_20:
+   - Before: Range [100.00 to 660.00], Mean = 407.47, SD = 149.72
+   - After:  Range [107.00 to 612.00], Mean = 407.34, SD = 149.42
+   - Impact: SD reduced by 0.2%
+
+   id_32:
+   - Before: Range [0.00 to 32.00], Mean = 25.33, SD = 3.00
+   - After:  Range [24.00 to 24.00], Mean = 24.00, SD = 0.00
+   - Impact: SD reduced by 100.0%
+
+> sink()

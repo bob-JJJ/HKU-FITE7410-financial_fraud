@@ -774,55 +774,62 @@ if ("isFraud" %in% numeric_column_names) {
 
 print("Bivariate and Multivariate Analysis complete!")
 
+
 # Step 4: Detect erroneous & missing values ------------------------------------
+# This section focuses on identifying and handling missing values and outliers in the dataset
+
+## Create necessary directories first
+dir.create("output", showWarnings = FALSE)
+dir.create("output/clean", showWarnings = FALSE, recursive = TRUE)
 
 ## Missing Values Treatment --------------------------------------------------
+# Implementing systematic approaches to handle missing data based on column types
 
-# Function to calculate mode
+# Function to calculate mode - the most frequently occurring value
 get_mode <- function(x) {
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-# Function to print missing value summary
+# Function to print missing value summary with detailed statistics
 print_missing_summary <- function(data, title = "Missing Values Summary") {
   cat("\n", title, "\n", paste(rep("-", nchar(title)), collapse = ""), "\n")
-
+  
   # Calculate missing values for each column
   missing_summary <- data.frame(
     Column = names(data),
     Missing_Count = colSums(is.na(data)),
     Missing_Percentage = round(colMeans(is.na(data)) * 100, 2)
   )
-
-  # Sort by missing percentage
+  
+  # Sort by missing percentage for better visualization
   missing_summary <- missing_summary[order(-missing_summary$Missing_Percentage), ]
-
+  
   # Print summary
   print(missing_summary)
-
+  
   return(missing_summary)
 }
 
-# Initial missing values analysis
+# Initial missing values analysis to understand the scope of the problem
 initial_missing <- print_missing_summary(data, "Initial Missing Values Analysis")
 
-# Save initial missing values analysis
-write.csv(initial_missing, "output/initial_missing_analysis.csv", row.names = FALSE)
+# Save initial missing values analysis for documentation
+write.csv(initial_missing, "output/clean/initial_missing_analysis.csv", row.names = FALSE)
 
-# Calculate missing value percentages for each column
+# Calculate missing value percentages for each column to determine removal candidates
 missing_percentages <- colMeans(is.na(data)) * 100
 high_missing_cols <- names(missing_percentages[missing_percentages > 50])
 
-# Remove columns with more than 50% missing values
+# Remove columns with more than 50% missing values - these are too sparse to be useful
 data_clean <- data[, !names(data) %in% high_missing_cols]
 
-# Identify column types
+# Identify column types for type-appropriate imputation strategies
 numeric_cols <- names(data_clean)[sapply(data_clean, is.numeric)]
 categorical_cols <- names(data_clean)[sapply(data_clean, is.character)]
 
-# Create missing value treatment report
-sink("output/missing_values_treatment.txt")
+# Create detailed missing value treatment report for documentation
+sink("output/clean/missing_values_treatment.txt")
 cat("Missing Values Treatment Report\n")
 cat("============================\n\n")
 
@@ -857,18 +864,18 @@ for(col in categorical_cols) {
   }
 }
 
-# Final missing values check
+# Final missing values check to verify successful treatment
 final_missing <- print_missing_summary(data_clean, "\n4. Final Missing Values Check")
 sink()
 
-# Additional data quality checks
-# Check for infinite values
+# Additional data quality checks for more comprehensive cleaning
+# Check for infinite values which can cause computational issues
 inf_check <- sapply(data_clean[numeric_cols], function(x) sum(is.infinite(x)))
 if(any(inf_check > 0)) {
   cat("\nWarning: Infinite values found in the following columns:\n")
   print(inf_check[inf_check > 0])
-
-  # Replace infinite values with NA and then impute
+  
+  # Replace infinite values with NA and then impute with median
   for(col in names(inf_check[inf_check > 0])) {
     data_clean[[col]][is.infinite(data_clean[[col]])] <- NA
     median_val <- median(data_clean[[col]], na.rm = TRUE)
@@ -876,26 +883,96 @@ if(any(inf_check > 0)) {
   }
 }
 
-# Check for constant columns (zero variance)
+# Check for constant columns (zero variance) which provide no predictive value
 constant_cols <- sapply(data_clean, function(x) length(unique(x)) == 1)
 if(any(constant_cols)) {
   cat("\nWarning: The following columns have constant values:\n")
   print(names(data_clean)[constant_cols])
 }
 
-# Save cleaned data
-write.csv(data_clean, "output/cleaned_data_missing_treated.csv", row.names = FALSE)
+# Save cleaned data after missing value treatment
+write.csv(data_clean, "output/clean/cleaned_data_missing_treated.csv", row.names = FALSE)
 
-# Print summary of changes
+# Print summary of changes to quantify the cleaning impact
 cat("\nData Cleaning Summary:\n")
 cat("Original dimensions:", dim(data)[1], "rows,", dim(data)[2], "columns\n")
 cat("Cleaned dimensions:", dim(data_clean)[1], "rows,", dim(data_clean)[2], "columns\n")
 
+# Create visual summary of missing data and treatment process
+library(ggplot2)
+library(reshape2)
 
+# 1. Generate visualizations to show missing data before treatment
+# Create a dataframe for the missingness categories
+missing_categories <- data.frame(
+  Missing_Range = c("No Missing (0%)", "Low (0-10%)", "Medium (10-30%)", "High (30-50%)", "Very High (>50%)"),
+  Count_Before = c(
+    sum(missing_percentages == 0),
+    sum(missing_percentages > 0 & missing_percentages <= 10),
+    sum(missing_percentages > 10 & missing_percentages <= 30),
+    sum(missing_percentages > 30 & missing_percentages <= 50),
+    sum(missing_percentages > 50)
+  )
+)
 
-# Step 5: Detect erroneous & missing values------------------------------------
+# Calculate missing percentages after treatment
+missing_percentages_after <- colMeans(is.na(data_clean)) * 100
+missing_categories$Count_After <- c(
+  sum(missing_percentages_after == 0),
+  sum(missing_percentages_after > 0 & missing_percentages_after <= 10),
+  sum(missing_percentages_after > 10 & missing_percentages_after <= 30),
+  sum(missing_percentages_after > 30 & missing_percentages_after <= 50),
+  sum(missing_percentages_after > 50)
+)
 
-# truncation function
+# Convert to long format for easier plotting
+missing_long <- melt(missing_categories, id.vars = "Missing_Range", 
+                     variable.name = "Stage", value.name = "Count")
+missing_long$Stage <- ifelse(missing_long$Stage == "Count_Before", "Before Treatment", "After Treatment")
+
+# Create bar chart comparing missing values before and after treatment
+plot_missing <- ggplot(missing_long, aes(x = Missing_Range, y = Count, fill = Stage)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(title = "Missing Values Distribution Before and After Treatment",
+       x = "Missing Value Percentage Range",
+       y = "Number of Variables",
+       fill = "") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Save the plot
+ggsave("output/clean/missing_values_comparison.png", plot_missing, width = 10, height = 6)
+
+# 2. Create pie chart showing the proportion of different imputation methods
+imputation_methods <- data.frame(
+  Method = c("Removed (>50% missing)", "Median Imputation", "Mode Imputation", "No Imputation Needed"),
+  Count = c(
+    length(high_missing_cols),
+    sum(sapply(numeric_cols, function(col) sum(is.na(data[[col]])) > 0)),
+    sum(sapply(categorical_cols, function(col) sum(is.na(data[[col]]) | data[[col]] == "") > 0)),
+    ncol(data) - length(high_missing_cols) - 
+      sum(sapply(numeric_cols, function(col) sum(is.na(data[[col]])) > 0)) -
+      sum(sapply(categorical_cols, function(col) sum(is.na(data[[col]]) | data[[col]] == "") > 0))
+  )
+)
+
+# Create pie chart of imputation methods
+plot_imputation <- ggplot(imputation_methods, aes(x = "", y = Count, fill = Method)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  theme_void() +
+  labs(title = "Distribution of Missing Value Treatment Methods",
+       fill = "Method") +
+  geom_text(aes(label = paste0(Count, "\n(", round(Count/sum(Count)*100, 1), "%)")), 
+            position = position_stack(vjust = 0.5))
+
+# Save the plot
+ggsave("output/clean/imputation_methods_pie.png", plot_imputation, width = 8, height = 6)
+
+# Step 5: Outlier detection and treatment ------------------------------------
+# This section identifies and handles extreme values that could distort analysis
+
+# Function to truncate values based on percentiles
 truncate_values <- function(x, lower_percentile = 0.01, upper_percentile = 0.99) {
   lower <- quantile(x, lower_percentile)
   upper <- quantile(x, upper_percentile)
@@ -906,11 +983,45 @@ truncate_values <- function(x, lower_percentile = 0.01, upper_percentile = 0.99)
   ))
 }
 
+# Create a dataframe to store outlier treatment results for visualization
+outlier_summary <- data.frame(
+  Variable = character(),
+  Method = character(),
+  Lower_Bound = numeric(),
+  Upper_Bound = numeric(),
+  Outliers_Count = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Store before-after statistics for key variables
+before_after_stats <- data.frame(
+  Variable = character(),
+  Before_Min = numeric(),
+  Before_Max = numeric(),
+  Before_Mean = numeric(),
+  Before_SD = numeric(),
+  After_Min = numeric(),
+  After_Max = numeric(),
+  After_Mean = numeric(),
+  After_SD = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Process each numeric column for outlier detection and treatment
 for(col in numeric_cols) {
   # Skip ID and binary columns
   if(!grepl("ID$|^is", col, ignore.case = TRUE) && length(unique(data_clean[[col]])) > 2) {
     cat("\n=== Processing Variable:", col, "===\n")
-
+    
+    # Store original statistics for comparison
+    before_stats <- c(
+      col,
+      min(data_clean[[col]], na.rm = TRUE),
+      max(data_clean[[col]], na.rm = TRUE),
+      mean(data_clean[[col]], na.rm = TRUE),
+      sd(data_clean[[col]], na.rm = TRUE)
+    )
+    
     # 1. IQR Method
     cat("\n1. IQR Method Results:\n")
     # Calculate median and IQR
@@ -918,16 +1029,36 @@ for(col in numeric_cols) {
     Q1 <- quantile(data_clean[[col]], 0.25)
     Q3 <- quantile(data_clean[[col]], 0.75)
     IQR <- Q3 - Q1
-
+    
     # Calculate bounds using the formula: M ± 3 x IQR/(2 x 0.6745)
     constant <- 3 * IQR/(2 * 0.6745)
     iqr_lower <- M - constant
     iqr_upper <- M + constant
-
+    iqr_outliers <- sum(data_clean[[col]] < iqr_lower | data_clean[[col]] > iqr_upper)
+    
+    # Add to summary dataframe
+    outlier_summary <- rbind(outlier_summary, data.frame(
+      Variable = col,
+      Method = "IQR Method",
+      Lower_Bound = iqr_lower,
+      Upper_Bound = iqr_upper,
+      Outliers_Count = iqr_outliers
+    ))
+    
     # 2. Truncation Method
     cat("\n2. Truncation Method Results:\n")
     trunc_result <- truncate_values(data_clean[[col]])
-
+    trunc_outliers <- sum(data_clean[[col]] < trunc_result$lower | data_clean[[col]] > trunc_result$upper)
+    
+    # Add to summary dataframe
+    outlier_summary <- rbind(outlier_summary, data.frame(
+      Variable = col,
+      Method = "Percentile Method",
+      Lower_Bound = trunc_result$lower,
+      Upper_Bound = trunc_result$upper,
+      Outliers_Count = trunc_outliers
+    ))
+    
     # Print comparative summary
     cat("\nComparative Summary:")
     cat("\n------------------")
@@ -936,61 +1067,586 @@ for(col in numeric_cols) {
     cat("\n\nIQR Method Bounds:")
     cat("\n- Lower:", iqr_lower)
     cat("\n- Upper:", iqr_upper)
-    cat("\n- Outliers:", sum(data_clean[[col]] < iqr_lower | data_clean[[col]] > iqr_upper))
-
+    cat("\n- Outliers:", iqr_outliers)
+    
     cat("\n\nTruncation Method Bounds (1% and 99%):")
     cat("\n- Lower:", trunc_result$lower)
     cat("\n- Upper:", trunc_result$upper)
-    cat("\n- Outliers:", sum(data_clean[[col]] < trunc_result$lower | data_clean[[col]] > trunc_result$upper))
-
+    cat("\n- Outliers:", trunc_outliers)
+    
     # Combine both methods (using the more conservative bounds)
     final_lower <- max(iqr_lower, trunc_result$lower)
     final_upper <- min(iqr_upper, trunc_result$upper)
-
+    
     # Apply final bounds
     data_clean[[col]] <- pmin(pmax(data_clean[[col]], final_lower), final_upper)
-
+    final_outliers <- sum(data_clean[[col]] == final_lower | data_clean[[col]] == final_upper)
+    
+    # Add final method to summary
+    outlier_summary <- rbind(outlier_summary, data.frame(
+      Variable = col,
+      Method = "Combined Method",
+      Lower_Bound = final_lower,
+      Upper_Bound = final_upper,
+      Outliers_Count = final_outliers
+    ))
+    
     cat("\n\nFinal Combined Bounds:")
     cat("\n- Lower:", final_lower)
     cat("\n- Upper:", final_upper)
-    cat("\n- Total modified values:", sum(data_clean[[col]] == final_lower | data_clean[[col]] == final_upper))
+    cat("\n- Total modified values:", final_outliers)
     cat("\n==========================================\n")
-
+    
+    # Store after-treatment statistics
+    after_stats <- c(
+      min(data_clean[[col]], na.rm = TRUE),
+      max(data_clean[[col]], na.rm = TRUE),
+      mean(data_clean[[col]], na.rm = TRUE),
+      sd(data_clean[[col]], na.rm = TRUE)
+    )
+    
+    # Combine before and after statistics
+    before_after_stats <- rbind(before_after_stats, 
+                                data.frame(
+                                  Variable = before_stats[1],
+                                  Before_Min = as.numeric(before_stats[2]),
+                                  Before_Max = as.numeric(before_stats[3]),
+                                  Before_Mean = as.numeric(before_stats[4]),
+                                  Before_SD = as.numeric(before_stats[5]),
+                                  After_Min = as.numeric(after_stats[1]),
+                                  After_Max = as.numeric(after_stats[2]),
+                                  After_Mean = as.numeric(after_stats[3]),
+                                  After_SD = as.numeric(after_stats[4])
+                                ))
   }
 }
 
-# Save the cleaned data
-write.csv(data_clean, "output/cleaned_data_combined_methods.csv", row.names = FALSE)
+# Save the cleaned data after outlier treatment
+write.csv(data_clean, "output/clean/cleaned_data_combined_methods.csv", row.names = FALSE)
 
-# Create summary report
-sink("output/outlier_treatment_report.txt")
+# Save outlier treatment summary
+write.csv(outlier_summary, "output/clean/outlier_treatment_summary.csv", row.names = FALSE)
+
+# Save before-after statistics
+write.csv(before_after_stats, "output/clean/variable_statistics_comparison.csv", row.names = FALSE)
+
+# Create and save visualization of outlier treatment effects
+# Select a few representative variables for visualization
+top_variables <- names(sort(table(outlier_summary$Variable), decreasing = TRUE)[1:5])
+outlier_subset <- outlier_summary[outlier_summary$Variable %in% top_variables,]
+
+# Create bar chart of outlier counts by method
+plot_outliers <- ggplot(outlier_subset, aes(x = Variable, y = Outliers_Count, fill = Method)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(title = "Outlier Detection Comparison by Method",
+       x = "Variable",
+       y = "Number of Outliers Detected",
+       fill = "Method") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Save the plot
+ggsave("output/clean/outlier_detection_comparison.png", plot_outliers, width = 10, height = 6)
+
+# Create detailed outlier treatment report
+sink("output/clean/outlier_treatment_report.txt")
 cat("Outlier Treatment Summary Report\n")
-cat("Date:", Sys.time(), "\n\n")
+cat("===============================\n")
+cat("Date:", format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n\n")
 
+cat("1. Outlier Detection Methods:\n")
+cat("   - IQR Method: Using robust statistics with formula M ± 3 × IQR/(2 × 0.6745)\n")
+cat("   - Percentile Method: Truncating values below 1st or above 99th percentile\n")
+cat("   - Combined Method: Using the more conservative bounds from both methods\n\n")
+
+cat("2. Variables with Most Outliers:\n")
+top_outliers <- outlier_summary[outlier_summary$Method == "Combined Method",]
+top_outliers <- top_outliers[order(-top_outliers$Outliers_Count),][1:5,]
+for(i in 1:nrow(top_outliers)) {
+  cat(sprintf("   - %s: %d outliers (%.2f%% of data)\n", 
+              top_outliers$Variable[i], 
+              top_outliers$Outliers_Count[i],
+              top_outliers$Outliers_Count[i]/nrow(data_clean)*100))
+}
+
+cat("\n3. Statistical Impact of Outlier Treatment:\n")
+for(i in 1:nrow(before_after_stats)) {
+  cat(sprintf("\n   %s:\n", before_after_stats$Variable[i]))
+  cat(sprintf("   - Before: Range [%.2f to %.2f], Mean = %.2f, SD = %.2f\n",
+              before_after_stats$Before_Min[i],
+              before_after_stats$Before_Max[i],
+              before_after_stats$Before_Mean[i],
+              before_after_stats$Before_SD[i]))
+  cat(sprintf("   - After:  Range [%.2f to %.2f], Mean = %.2f, SD = %.2f\n",
+              before_after_stats$After_Min[i],
+              before_after_stats$After_Max[i],
+              before_after_stats$After_Mean[i],
+              before_after_stats$After_SD[i]))
+  
+  # Calculate percent change in standard deviation
+  sd_change <- (before_after_stats$After_SD[i] - before_after_stats$Before_SD[i]) / before_after_stats$Before_SD[i] * 100
+  cat(sprintf("   - Impact: SD reduced by %.1f%%\n", abs(sd_change)))
+}
 sink()
 
+# Create comprehensive cleaning summary with visualizations
+sink("output/clean/cleaning_summary.txt")
+cat("Data Cleaning Summary Report\n")
+cat("==========================\n\n")
 
-## Save cleaning summary -------------------------------------------------------
-sink("output/cleaning_summary.txt")
-cat("Data Cleaning Summary\n\n")
-cat("1. Removed columns with >50% missing values:\n")
-cat(paste(high_missing_cols, collapse = "\n"), "\n\n")
-cat("2. Original dimensions:", nrow(data), "rows,", ncol(data), "columns\n")
-cat("3. Cleaned dimensions:", nrow(data_clean), "rows,", ncol(data_clean), "columns\n")
+cat("1. Missing Values Treatment\n")
+cat("-------------------------\n")
+cat("- Removed", length(high_missing_cols), "columns with >50% missing values\n")
+cat("- Applied median imputation to", sum(sapply(numeric_cols, function(col) sum(is.na(data[[col]])) > 0)), "numeric columns\n")
+cat("- Applied mode imputation to", sum(sapply(categorical_cols, function(col) sum(is.na(data[[col]]) | data[[col]] == "") > 0)), "categorical columns\n")
+
+cat("\n2. Outlier Treatment\n")
+cat("------------------\n")
+cat("- Applied combined IQR and percentile-based approach\n")
+cat("- Treated outliers in", nrow(unique(outlier_summary[outlier_summary$Method == "Combined Method", "Variable"])), "numeric variables\n")
+cat("- Total outliers modified:", sum(outlier_summary[outlier_summary$Method == "Combined Method", "Outliers_Count"]), "\n")
+
+cat("\n3. Dataset Dimensions\n")
+cat("------------------\n")
+cat("- Original:", nrow(data), "rows,", ncol(data), "columns\n")
+cat("- Final:", nrow(data_clean), "rows,", ncol(data_clean), "columns\n")
+cat("- Features removed:", ncol(data) - ncol(data_clean), "\n")
+
+cat("\n4. Data Quality Improvements\n")
+cat("-------------------------\n")
+cat("- Missing values reduced from", sum(is.na(data)), "to", sum(is.na(data_clean)), "\n")
+cat("- Standard deviation reduction (average across treated variables):", 
+    round(mean(abs((before_after_stats$After_SD - before_after_stats$Before_SD) / before_after_stats$Before_SD * 100)), 1), "%\n")
 sink()
 
+# Create before-after boxplots for key variables to visualize impact of outlier treatment
+# First save backup of original data for key variables
+key_vars <- unique(before_after_stats$Variable)[1:min(5, nrow(before_after_stats))]
+compare_data <- data.frame(
+  Variable = character(),
+  Value = numeric(),
+  Stage = character(),
+  stringsAsFactors = FALSE
+)
+
+# Prepare data for before boxplots (using original data)
+for(var in key_vars) {
+  if(var %in% names(data)) {
+    before_data <- data.frame(
+      Variable = rep(var, length(data[[var]])),
+      Value = data[[var]],
+      Stage = rep("Before Treatment", length(data[[var]]))
+    )
+    compare_data <- rbind(compare_data, before_data)
+  }
+}
+
+# Prepare data for after boxplots
+for(var in key_vars) {
+  if(var %in% names(data_clean)) {
+    after_data <- data.frame(
+      Variable = rep(var, length(data_clean[[var]])),
+      Value = data_clean[[var]],
+      Stage = rep("After Treatment", length(data_clean[[var]]))
+    )
+    compare_data <- rbind(compare_data, after_data)
+  }
+}
+
+# Create boxplot comparison
+for(var in key_vars) {
+  var_data <- compare_data[compare_data$Variable == var,]
+  
+  # Boxplot comparison
+  plot_box <- ggplot(var_data, aes(x = Stage, y = Value, fill = Stage)) +
+    geom_boxplot() +
+    theme_minimal() +
+    labs(title = paste("Distribution Comparison for", var),
+         x = "",
+         y = "Value") +
+    theme(legend.position = "none")
+  
+  # Save plot
+  ggsave(paste0("output/clean/boxplot_", var, ".png"), plot_box, width = 8, height = 6)
+  
+  # Density plot comparison
+  plot_density <- ggplot(var_data, aes(x = Value, fill = Stage)) +
+    geom_density(alpha = 0.5) +
+    theme_minimal() +
+    labs(title = paste("Density Comparison for", var),
+         x = "Value",
+         y = "Density") +
+    theme(legend.position = "bottom")
+  
+  # Save plot
+  ggsave(paste0("output/clean/density_", var, ".png"), plot_density, width = 8, height = 6)
+}
+
+# Calculate overall statistics
+total_removed_cols <- length(high_missing_cols)
+numeric_imputed <- sum(sapply(numeric_cols, function(col) sum(is.na(data[[col]])) > 0))
+categorical_imputed <- sum(sapply(categorical_cols, function(col) sum(is.na(data[[col]]) | data[[col]] == "") > 0))
+variables_with_outliers <- nrow(unique(outlier_summary[outlier_summary$Method == "Combined Method", "Variable"]))
+total_outliers_modified <- sum(outlier_summary[outlier_summary$Method == "Combined Method", "Outliers_Count"])
+avg_sd_reduction <- round(mean(abs((before_after_stats$After_SD - before_after_stats$Before_SD) / before_after_stats$Before_SD * 100)), 1)
+
+# Print final summary to console
+cat("\n\n=====================================================\n")
+cat("DATA CLEANING PROCESS COMPLETED SUCCESSFULLY\n")
+cat("=====================================================\n\n")
+cat(sprintf("Original dataset: %d rows, %d columns\n", nrow(data), ncol(data)))
+cat(sprintf("Cleaned dataset: %d rows, %d columns\n\n", nrow(data_clean), ncol(data_clean)))
+
+cat("MISSING VALUES TREATMENT:\n")
+cat(sprintf("- %d columns removed (>50%% missing)\n", total_removed_cols))
+cat(sprintf("- %d numeric variables imputed with median\n", numeric_imputed))
+cat(sprintf("- %d categorical variables imputed with mode\n\n", categorical_imputed))
+
+cat("OUTLIER TREATMENT:\n")
+cat(sprintf("- %d variables processed for outliers\n", variables_with_outliers))
+cat(sprintf("- %d outlier values modified (combined method)\n", total_outliers_modified))
+cat(sprintf("- %.1f%% average reduction in standard deviation\n\n", avg_sd_reduction))
+
+cat("VISUALIZATIONS AND REPORTS SAVED TO:\n")
+cat("- Comparison plots: output/clean/*.png\n")
+cat("- Detailed reports: output/clean/*.txt\n")
+cat("- Cleaned dataset: output/clean/cleaned_data_combined_methods.csv\n\n")
+
+cat("=====================================================\n")
 
 # # Step 6: Feature Engineering ------------------------------------------------
 
-## Write your code here
+# Create new folder for feature engineering output
+if (!dir.exists("output/feature_engineering")) {
+  dir.create("output/feature_engineering")
+}
 
-#ggplot(...)
-#hist(...)
-#...
+library(dplyr)
+library(lubridate)
+library(ggplot2)
 
-# 3. Bi-/Multi-variate Analysis
-#ggplot(dataset, aes(...)) + geom_bar()
-#corrplot(...)
-#......
+# Create a copy of the data for feature engineering
+data_fe <- data
+
+# Feature 1: Time-based features
+cat("Creating time-based features...\n")
+
+# Convert TransactionDT to seconds (assuming it represents seconds since a reference time)
+data_fe$Transaction_Hour <- (data_fe$TransactionDT %% 86400) %/% 3600
+data_fe$Transaction_DayOfWeek <- (data_fe$TransactionDT %/% 86400) %% 7 + 1  # 1-7 (Monday-Sunday)
+data_fe$Transaction_Weekend <- ifelse(data_fe$Transaction_DayOfWeek %in% c(6, 7), 1, 0)
+
+# Create period of day (1: Morning 6-12, 2: Afternoon 12-18, 3: Evening 18-24, 4: Night 0-6)
+data_fe$DayPeriod <- cut(data_fe$Transaction_Hour, 
+                         breaks = c(-1, 5, 11, 17, 23),
+                         labels = c("Night", "Morning", "Afternoon", "Evening"))
+
+# Feature 2: High-risk hour flag (based on your analysis that morning hours 7-10am have high fraud rates)
+data_fe$HighRiskHour <- ifelse(data_fe$Transaction_Hour >= 7 & data_fe$Transaction_Hour <= 10, 1, 0)
+
+# Feature 3: Amount-based risk features
+cat("Creating amount-based features...\n")
+
+# Log transformation of amount (to handle skewness)
+data_fe$LogAmount <- log1p(data_fe$TransactionAmt)
+
+# Amount percentile rank (to identify unusually large transactions)
+data_fe$AmountPercentile <- percent_rank(data_fe$TransactionAmt)
+
+# Amount deviation from product category median
+# First calculate median amount by ProductCD
+product_medians <- data_fe %>%
+  group_by(ProductCD) %>%
+  summarize(MedianAmt = median(TransactionAmt, na.rm = TRUE))
+
+# Merge back to get deviations
+data_fe <- data_fe %>%
+  left_join(product_medians, by = "ProductCD") %>%
+  mutate(AmountDeviation = TransactionAmt - MedianAmt,
+         AmountDeviationRatio = TransactionAmt / MedianAmt)
+
+# Feature 4: Email domain risk features
+cat("Creating email domain risk features...\n")
+
+# Extract email domains
+data_fe$P_emaildomain_type <- case_when(
+  grepl("gmail", data_fe$P_emaildomain, ignore.case = TRUE) ~ "Google",
+  grepl("yahoo", data_fe$P_emaildomain, ignore.case = TRUE) ~ "Yahoo",
+  grepl("hotmail|outlook|live|msn", data_fe$P_emaildomain, ignore.case = TRUE) ~ "Microsoft",
+  grepl("aol", data_fe$P_emaildomain, ignore.case = TRUE) ~ "AOL",
+  grepl("comcast|att|centurylink", data_fe$P_emaildomain, ignore.case = TRUE) ~ "ISP",
+  !is.na(data_fe$P_emaildomain) ~ "Other",
+  is.na(data_fe$P_emaildomain) ~ "Missing"
+)
+
+# Calculate email domain fraud rates
+email_fraud_rates <- data_fe %>%
+  group_by(P_emaildomain_type) %>%
+  summarize(DomainFraudRate = mean(isFraud, na.rm = TRUE))
+
+# Merge back to get domain risk scores
+data_fe <- data_fe %>%
+  left_join(email_fraud_rates, by = "P_emaildomain_type")
+
+# Feature 5: Device risk indicators
+cat("Creating device-based features...\n")
+
+# Create device type risk indicator (mobile has higher fraud rate)
+data_fe$Mobile_Flag <- ifelse(data_fe$DeviceType == "mobile", 1, 0)
+
+# Calculate device info fraud rates
+device_fraud_rates <- data_fe %>%
+  group_by(DeviceInfo) %>%
+  summarize(
+    DeviceFraudRate = mean(isFraud, na.rm = TRUE),
+    DeviceCount = n()
+  ) %>%
+  filter(DeviceCount >= 100)  # Only consider common devices
+
+# Merge back to get device risk scores
+data_fe <- data_fe %>%
+  left_join(device_fraud_rates, by = "DeviceInfo") %>%
+  mutate(DeviceFraudRate = ifelse(is.na(DeviceFraudRate), mean(isFraud, na.rm = TRUE), DeviceFraudRate))
+
+# Feature 6: Transaction behavior features
+cat("Creating transaction behavior features...\n")
+
+# High C2/C1 value flag (based on correlation analysis)
+c2_threshold <- quantile(data_fe$C2, 0.95, na.rm = TRUE)
+c1_threshold <- quantile(data_fe$C1, 0.95, na.rm = TRUE)
+data_fe$HighC2Flag <- ifelse(data_fe$C2 > c2_threshold, 1, 0)
+data_fe$HighC1Flag <- ifelse(data_fe$C1 > c1_threshold, 1, 0)
+
+# Combined risk score based on C2, C1, C12 (top positive fraud correlations)
+data_fe$CRiskScore <- scale(data_fe$C2) + scale(data_fe$C1) + scale(data_fe$C12)
+
+# Feature 7: Verification mismatch indicators
+cat("Creating verification mismatch features...\n")
+
+# Email domain mismatch between purchaser and recipient (potential fraud indicator)
+data_fe$EmailMismatch <- ifelse(
+  !is.na(data_fe$P_emaildomain) & !is.na(data_fe$R_emaildomain) & 
+    data_fe$P_emaildomain != data_fe$R_emaildomain, 
+  1, 0)
+
+# Card verification mismatches (combining card-related flags)
+data_fe$CardMismatchFlag <- rowSums(
+  cbind(
+    ifelse(data_fe$C3 > 0, 1, 0),
+    ifelse(data_fe$C4 > median(data_fe$C4, na.rm=TRUE), 1, 0),
+    ifelse(data_fe$C5 > 0, 1, 0),
+    ifelse(data_fe$C6 > median(data_fe$C6, na.rm=TRUE), 1, 0)
+  ), 
+  na.rm = TRUE
+)
+
+# Feature 8: Aggregated behavior-based features
+cat("Creating aggregated behavior features...\n")
+
+# Card issuer (card1) fraud rates
+card1_fraud_rates <- data_fe %>%
+  group_by(card1) %>%
+  summarize(
+    Card1FraudRate = mean(isFraud, na.rm = TRUE),
+    Card1Count = n()
+  ) %>%
+  filter(Card1Count >= 50)  # Minimum observations threshold
+
+# Merge back
+data_fe <- data_fe %>%
+  left_join(card1_fraud_rates, by = "card1") %>%
+  mutate(Card1FraudRate = ifelse(is.na(Card1FraudRate), mean(isFraud, na.rm = TRUE), Card1FraudRate))
+
+# Calculate product category fraud rates
+product_fraud_rates <- data_fe %>%
+  group_by(ProductCD) %>%
+  summarize(ProductFraudRate = mean(isFraud, na.rm = TRUE))
+
+# Merge back
+data_fe <- data_fe %>%
+  left_join(product_fraud_rates, by = "ProductCD")
+
+# Feature 9: Create a combined risk score
+cat("Creating combined risk score...\n")
+
+# Standardize individual risk factors
+risk_cols <- c("DomainFraudRate", "DeviceFraudRate", "Card1FraudRate", 
+               "ProductFraudRate", "HighRiskHour", "CRiskScore")
+
+# Remove NA values from risk columns
+for(col in risk_cols) {
+  data_fe[[col]][is.na(data_fe[[col]])] <- median(data_fe[[col]], na.rm = TRUE)
+}
+
+# Calculate composite risk score
+data_fe$CompositeRiskScore <- rowMeans(scale(data_fe[,risk_cols]), na.rm = TRUE)
+
+# Feature 10: Create interaction features between high-risk indicators
+cat("Creating interaction features...\n")
+
+data_fe$HighRiskHour_Mobile <- data_fe$HighRiskHour * data_fe$Mobile_Flag
+data_fe$HighAmount_HighRiskHour <- ifelse(data_fe$AmountPercentile > 0.9 & data_fe$HighRiskHour == 1, 1, 0)
+data_fe$HighRisk_EmailMismatch <- data_fe$EmailMismatch * ifelse(data_fe$CompositeRiskScore > 0, 1, 0)
+
+# Save feature engineering summary
+sink("output/feature_engineering/features_summary.txt")
+cat("Feature Engineering Summary\n")
+cat("==========================\n\n")
+cat("1. Time-based Features:\n")
+cat("   - Transaction_Hour: Hour of the day (0-23)\n")
+cat("   - Transaction_DayOfWeek: Day of week (1-7, Monday-Sunday)\n")
+cat("   - Transaction_Weekend: Binary weekend indicator\n")
+cat("   - DayPeriod: Categorized period of day (Night, Morning, Afternoon, Evening)\n")
+cat("   - HighRiskHour: Flag for high-risk morning hours (7-10am) with fraud rates 29-35%\n\n")
+
+cat("2. Amount-based Features:\n")
+cat("   - LogAmount: Log-transformed transaction amount to handle skewness\n")
+cat("   - AmountPercentile: Percentile rank of transaction amount\n")
+cat("   - AmountDeviation: Deviation from product category median\n")
+cat("   - AmountDeviationRatio: Ratio to product category median\n\n")
+
+cat("3. Email Domain Features:\n")
+cat("   - P_emaildomain_type: Categorized email provider\n")
+cat("   - DomainFraudRate: Fraud rate associated with email domain\n\n")
+
+cat("4. Device Features:\n")
+cat("   - Mobile_Flag: Flag for mobile transactions (higher fraud risk)\n")
+cat("   - DeviceFraudRate: Fraud rate associated with specific device\n\n")
+
+cat("5. Transaction Behavior Features:\n")
+cat("   - HighC2Flag/HighC1Flag: Flags for high-risk C values (top 5%)\n")
+cat("   - CRiskScore: Combined risk score based on C2, C1, C12 correlations\n\n")
+
+cat("6. Verification Mismatch Features:\n")
+cat("   - EmailMismatch: Flag for mismatch between purchaser and recipient email domains\n")
+cat("   - CardMismatchFlag: Aggregate of card-related verification flags\n\n")
+
+cat("7. Aggregated Behavior Features:\n")
+cat("   - Card1FraudRate: Fraud rate associated with card issuer\n")
+cat("   - ProductFraudRate: Fraud rate associated with product category\n\n")
+
+cat("8. Combined Risk Score:\n")
+cat("   - CompositeRiskScore: Standardized composite of multiple risk indicators\n\n")
+
+cat("9. Interaction Features:\n")
+cat("   - HighRiskHour_Mobile: High-risk hour on mobile device\n")
+cat("   - HighAmount_HighRiskHour: Large transaction during high-risk hours\n")
+cat("   - HighRisk_EmailMismatch: Email mismatch for transactions with high composite risk\n\n")
+
+cat("Feature Justification:\n")
+cat("======================\n")
+cat("1. Temporal patterns are critical for fraud detection as fraudsters often target specific times\n")
+cat("   The morning hours (7-10am) showed dramatically elevated fraud rates (29-35%)\n\n")
+
+cat("2. Amount-based features help identify unusual transaction patterns\n")
+cat("   Fraudulent transactions showed slightly higher variability with more outliers\n\n")
+
+cat("3. Email domains showed significant variation in fraud rates with Google having the highest rate\n")
+cat("   among major providers, making this a valuable risk indicator\n\n")
+
+cat("4. Mobile devices had substantially higher fraud rates (14.5%) than desktop (9.46%)\n\n")
+
+cat("5. Variables C2, C1, and C12 had the highest positive correlations with fraud\n")
+cat("   (0.047, 0.040, and 0.035 respectively)\n\n")
+
+cat("6. Mismatches between verification data points are strong fraud indicators\n\n")
+
+cat("7. Aggregated behavior features leverage historical patterns at various levels\n")
+cat("   Product category 'key_LY' had the highest fraud rate (17.3%)\n\n")
+
+cat("8. Combined risk scores provide a holistic view of transaction risk\n\n")
+
+cat("9. Interaction features capture complex fraud patterns that individual features cannot\n")
+sink()
+
+# Save engineered feature dataset
+write.csv(data_fe, "output/feature_engineering/engineered_data.csv", row.names = FALSE)
+
+# Generate visualizations for new features
+pdf("output/feature_engineering/engineered_features_plots.pdf", width = 12, height = 10)
+
+# Plot 1: Composite Risk Score by Fraud Status
+ggplot(data_fe, aes(x = factor(isFraud), y = CompositeRiskScore, fill = factor(isFraud))) +
+  geom_boxplot() +
+  labs(title = "Composite Risk Score by Fraud Status",
+       x = "Fraud Status", y = "Risk Score") +
+  scale_fill_manual(values = c("0" = "blue", "1" = "red"),
+                    labels = c("0" = "Legitimate", "1" = "Fraudulent")) +
+  theme_minimal()
+
+# Plot 2: Hour of Day by Fraud Rate
+hour_fraud_rate <- data_fe %>%
+  group_by(Transaction_Hour) %>%
+  summarize(FraudRate = mean(isFraud) * 100)
+
+ggplot(hour_fraud_rate, aes(x = factor(Transaction_Hour), y = FraudRate)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  geom_text(aes(label = round(FraudRate, 1)), vjust = -0.5, size = 3) +
+  geom_hline(yintercept = mean(data_fe$isFraud) * 100, linetype = "dashed", color = "red") +
+  labs(title = "Fraud Rate by Hour of Day",
+       x = "Hour of Day", y = "Fraud Rate (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot 3: Mobile vs Desktop Fraud Rates
+device_fraud <- data_fe %>%
+  group_by(Mobile_Flag) %>%
+  summarize(
+    Count = n(),
+    FraudRate = mean(isFraud) * 100
+  )
+
+ggplot(device_fraud, aes(x = factor(Mobile_Flag), y = FraudRate, fill = factor(Mobile_Flag))) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = round(FraudRate, 2)), vjust = -0.5) +
+  labs(title = "Fraud Rate by Device Type",
+       x = "Device Type", y = "Fraud Rate (%)") +
+  scale_x_discrete(labels = c("0" = "Desktop", "1" = "Mobile")) +
+  scale_fill_manual(values = c("0" = "darkgreen", "1" = "darkred"),
+                    labels = c("0" = "Desktop", "1" = "Mobile")) +
+  theme_minimal()
+
+# Plot 4: Email Domain Fraud Rates
+email_fraud <- data_fe %>%
+  group_by(P_emaildomain_type) %>%
+  summarize(
+    Count = n(),
+    FraudRate = mean(isFraud) * 100
+  )
+
+ggplot(email_fraud, aes(x = reorder(P_emaildomain_type, -FraudRate), y = FraudRate)) +
+  geom_bar(stat = "identity", fill = "orange") +
+  geom_text(aes(label = round(FraudRate, 1)), vjust = -0.5) +
+  labs(title = "Fraud Rate by Email Domain Type",
+       x = "Email Domain Type", y = "Fraud Rate (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Plot 5: Combined Risk Features
+risk_importance <- data.frame(
+  Feature = c("HighRiskHour", "Mobile_Flag", "EmailMismatch", "HighC2Flag", "HighC1Flag"),
+  FraudRate = c(
+    mean(data_fe$isFraud[data_fe$HighRiskHour == 1]) * 100,
+    mean(data_fe$isFraud[data_fe$Mobile_Flag == 1]) * 100,
+    mean(data_fe$isFraud[data_fe$EmailMismatch == 1]) * 100,
+    mean(data_fe$isFraud[data_fe$HighC2Flag == 1]) * 100,
+    mean(data_fe$isFraud[data_fe$HighC1Flag == 1]) * 100
+  )
+)
+
+ggplot(risk_importance, aes(x = reorder(Feature, -FraudRate), y = FraudRate)) +
+  geom_bar(stat = "identity", fill = "purple") +
+  geom_text(aes(label = round(FraudRate, 1)), vjust = -0.5) +
+  labs(title = "Fraud Rate by Risk Factor",
+       x = "Risk Factor", y = "Fraud Rate (%)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+dev.off()
+
+cat("Feature engineering complete! Results saved to output/feature_engineering/\n")
+cat("- Generated", ncol(data_fe) - ncol(data), "new features\n")
+cat("- Feature summary saved in features_summary.txt\n")
+cat("- Visualizations saved in engineered_features_plots.pdf\n")
 
 
