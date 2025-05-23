@@ -17,5 +17,8 @@ Contains all materials related to **Assignment 2**, including:
 - Evaluation of fraud detection algorithms.
 - Relevant documentation and reports.
 
+### `pastpaper`
+Contains pastpaper of 2022 and 2023 with my answers and notes.
+
 ## Acknowledgments
 This repository is maintained as part of the coursework for **FITE7410: Financial Fraud Analytics** at HKU.
